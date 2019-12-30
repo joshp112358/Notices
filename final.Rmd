@@ -11,15 +11,29 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+
 ## Introduction
+
+In November 2019, Abigail Thompson, chair of Mathematics at UC Davis and Vice President of the American Mathematical Society, published an essay  [[1](#Bibliography)] in the Notices of the AMS that criticized the usage of Diversity Statements when hiring mathematics faculty. She described Diversity Statements as a "political test" and compared it to McCarthyism.
+
+In December 2019, a multitude of responses to Thompson's Letter were published in Notices [[2](#Bibliography)], accumulating hundreds of signatures. One letter, titled "The math community values a commitment to diversity," (Letter A) "strongly (disagreed) with the sentiments and arguments
+in Dr. Thompson’s editorial," and hoped "that the AMS
+will reconsider the way that it uses its power and position
+in the mathematics communities in these kinds of discussions." Another letter, titled "Letter to the Editor," (Letter B) spoke of "grave concerns about recent attempts
+to intimidate a voice within our mathematical community." In this letter, they reference an article published by Chad Topaz of William's College, which encouraged faculty to "advise grad-school-bound undergraduate students – especially students who are minoritized along some axis – not to apply to UC Davis." [[3](#Bibliography)] Another letter 
+
+
+
 
 ## Data Collection
 ```{r, include=FALSE}
 library(readr)
 library(dplyr)
 library(ggplot2)
+library(MASS)
 df <- read_csv("~/Desktop/Notices/withAMS.csv")
 ```
+
 Data was collected between December 16-28, 2019 from Google Scholar, the Mathematics Genealogy Project, and MathSciNet. After a list of names and affiliations were scraped from the AMS response letters, signers were searched on Google Scholar and their citation numbers and h-index were collected. This was done using the scholarly API and manual checks. Then the math-genealogy-scraper was used to calculate PhD years and errors (duplicate names) were also corrected manually. MathSciNet entries were also collected manually. 
 
 ## Summary Statistics
@@ -43,33 +57,73 @@ summary(df)
 
 # Exploratory Data Analysis
 
-## Distribution of Data
+## Distribution of Citations
 ```{r, echo = FALSE}
 hist(df$citations,
      main = "Histogram of citations",
      xlab = "Number of Citations")
 ```
 
+If we construct a qq-plot with a fitted exponential curve, we find that there is divergence in the tails. 
 
-The histogram is left skewed, so we may try logging the distribution.
+```{r, echo=FALSE}
+Z <- na.omit(df$citations)
 
+params <- as.list(fitdistr(Z, "exponential")$estimate)
 
+library(ggplot2)
+qplot(sample = Z, geom = 'blank') +
+  stat_qq(distribution = qexp, dparams = params)+
+  stat_qq_line(distribution = qexp, dparams = params)+
+  ggtitle("Exponential QQ-plot with citations")
+```
 
-```{r, echo = FALSE}
+This is because the data is heavily left-skewed. This is usually handled either by transforming the data with a natural logarithm, or by square rooting. Applying a logarithm is more appropiate to assess normality, and a square root is more appropriate to assess exponentiality. We try both.
+
+```{r, echo=FALSE}
 hist(log(df$citations),
-     main = "Histogram of citations",
-     xlab = "Log Number of Citations")
+     main = "Histogram of log(citations)",
+     xlab = "Number of Citations")
 ```
 
-We can assess the normality of this data using a qq plot. 
+This data is now right skewed. 
 
-```{r, echo = FALSE}
-
-qqnorm(log(df$citations))
-qqline(log(df$citations))
+```{r}
+qplot(sample = na.omit(log(df$citations)), geom = 'blank') +
+  stat_qq()+
+  stat_qq_line()+
+  ggtitle("Normal QQplot for Citations")
 ```
 
-Data appears to be centered around the mean, and is unlikely to be log normally distributed. 
+The data is heavy towards the center, and the tails are sparsely populated. Hence the data is unlikely to look normally distributed. 
+
+```{r}
+hist(df$citations^0.5,
+     main = "Histogram of sqrt(citations)",
+     xlab = "Number of Citations")
+```
+
+This looks like an exponential distribution.
+
+```{r}
+Z <- na.omit(df$citations^0.5)
+params <- as.list(fitdistr(Z, "exponential")$estimate)
+
+qplot(sample = Z, geom = 'blank') +
+  stat_qq(distribution = qexp, dparams = params)+
+  stat_qq_line(distribution = qexp, dparams = params)+
+  ggtitle("Exponential QQ-plot with citations")
+```
+
+```{r}
+Z <- na.omit(df$citations^0.46)
+params <- as.list(fitdistr(Z, "exponential")$estimate)
+
+qplot(sample = Z, geom = 'blank') +
+  stat_qq(distribution = qexp, dparams = params)+
+  stat_qq_line(distribution = qexp, dparams = params)+
+  ggtitle("Exponential QQ-plot with citations")
+```
 
 ## NaN Visualization
 
@@ -774,7 +828,14 @@ The mean age for Rutger's faculty was 35.72 years. The mean h-index was 27.3. Th
 
 This is in line with signers of letter B, greater than signers of letter A, and slightly less than that of signers of letter C. 
 
-# Bibliography
-[1] http://www.ams.org/profession/data/annual-survey/2016dp-tableDF1.pdf
 
+## Bibliography
+
+[1] https://www.ams.org/journals/notices/201911/rnoti-p1778.pdf
+
+[2] https://www.ams.org/journals/notices/202001/rnoti-o1.pdf
+
+[3] https://qsideinstitute.org/2019/11/19/diversity-statements-in-hiring-the-american-mathematical-society-and-uc-davis/
+
+[4] https://qsideinstitute.org/2019/12/09/research-brief-public-letters/
 
