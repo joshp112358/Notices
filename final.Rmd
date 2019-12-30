@@ -1,0 +1,780 @@
+---
+title: "Untitled"
+author: "Joshua Paik and Igor Rivin"
+date: "12/29/2019"
+output:
+  html_document:
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+## Data Collection
+```{r, include=FALSE}
+library(readr)
+library(dplyr)
+library(ggplot2)
+df <- read_csv("~/Desktop/Notices/withAMS.csv")
+```
+Data was collected between December 16-28, 2019 from Google Scholar, the Mathematics Genealogy Project, and MathSciNet. After a list of names and affiliations were scraped from the AMS response letters, signers were searched on Google Scholar and their citation numbers and h-index were collected. This was done using the scholarly API and manual checks. Then the math-genealogy-scraper was used to calculate PhD years and errors (duplicate names) were also corrected manually. MathSciNet entries were also collected manually. 
+
+## Summary Statistics
+
+```{r, echo=FALSE}
+df$age <- (2020- df$year)
+df$citperyear <- df$citations/df$age
+df$amscitperyear <- df$amscit/df$age
+df$lettergroup <- as.factor(df$lettergroup)
+df$gender <- as.factor(df$gender)
+df$role <- as.factor(df$role)
+df$highered <- as.factor(df$highered)
+df$institution <- as.factor(df$institution)
+df$research <- as.factor(df$research)
+df$country <- as.factor(df$country)
+df$security <- as.factor(df$security)
+df$field <- as.factor(df$field)
+df$simplefield <- as.factor(df$simplefield)
+summary(df)
+```
+
+# Exploratory Data Analysis
+
+## Distribution of Data
+```{r, echo = FALSE}
+hist(df$citations,
+     main = "Histogram of citations",
+     xlab = "Number of Citations")
+```
+
+
+The histogram is left skewed, so we may try logging the distribution.
+
+
+
+```{r, echo = FALSE}
+hist(log(df$citations),
+     main = "Histogram of citations",
+     xlab = "Log Number of Citations")
+```
+
+We can assess the normality of this data using a qq plot. 
+
+```{r, echo = FALSE}
+
+qqnorm(log(df$citations))
+qqline(log(df$citations))
+```
+
+Data appears to be centered around the mean, and is unlikely to be log normally distributed. 
+
+## NaN Visualization
+
+```{r}
+library(naniar)
+vis_miss(df)
+```
+
+## Permutation Tests
+
+A permutation test is a nonparametric way of assessing the difference in mean between two populations. We are interested in whether an observed difference in mean is due to chance, and we can assess this in the following way.
+
+
+0. Record the true difference in mean ($d\mu$).
+1. $H_0: d\mu = 0, H_1: d\mu < 0$
+2. Sample without replacement 1/2 of the combined data set (X) and what is left (Y)
+3. Take the mean of X and Y and record the difference
+4. Repeat 10,000 times and plot the histogram
+5. Record the number of points (m) in the induced distribution that is more extreme than or equal to the observed $d\mu$. The probability m/10,000 is the probability that what was observed was due to chance. 
+
+Here is the function we will use to do this.
+
+```{r}
+# input data and the number of permutations
+meanPermutation <- function(Data, n){
+  output <- matrix(NA, ncol = 1, nrow = n)
+  for(i in 1:n){
+    #sample 1/2 of the data
+    X_index <- sample(1:length(Data), floor(0.5 * length(Data)))
+    Y_index <- setdiff(1:length(Data), X_index)
+    X <- Data[X_index]
+    Y <- Data[Y_index]
+    #calculate the difference
+    diff <- mean(X)-mean(Y)
+    #store
+    output[i, ] <- diff
+  } 
+  return(output)
+}
+```
+
+The induced probability is similar to p-value, and often produces a similar p-value to a 2-sample t-test. However, it is not a p-value and cannot be accurately interpreted using the standard 0.05 significance benchmark. Instead, probabilities are assessed relatively. 
+
+## Gender
+
+What is the proportion of female professors who signed letters A, B, and C. According to a 2016 AMS survey, 707/4902 = 14.4% of tenured professors are women, and including all professionals, 2004/9921 = 20.2% are women. 
+
+We can determine this by using dplyr's filter function. 
+
+```{r}
+#search via booleans
+table(filter(df,((lettergroup == "A Only"|lettergroup == "A and B")&(role=="professor")))$gender)
+```
+On letter A, 68/147 = 46.3% of professors were women. 
+```{r}
+table(filter(df,((lettergroup == "B Only"|lettergroup == "A and B")&(role=="professor")))$gender)
+```
+On letter B, 40/312 = 12.8% of professors were women. 
+```{r}
+table(filter(df,((lettergroup == "C Only"|lettergroup == "B and C")&(role=="professor")))$gender)
+```
+On letter C, 37/182 = 20.3% of professors were women. 
+
+So while letter A was signed by proportionally more female professors than the proportion determined by the AMS, letters B and C were generally reflective of the field, with C over representing the number of tenured female professors, and B slightly under representing the number of tenured female professors. 
+
+## Age
+
+What is the mean age of signers relative to PhD graduation? Are signers of B and C older than signers of A?
+
+```{r, echo = FALSE, warning = FALSE}
+plot1 <- ggplot(df, aes(x=age))+
+  geom_histogram(data=filter(df, (lettergroup == "A Only"|lettergroup == "A and B")),fill = "red", alpha = 0.2, binwidth = 5) + 
+  geom_histogram(data=filter(df, (lettergroup == "B Only"|lettergroup == "A and B")),fill = "blue", alpha = 0.2, binwidth = 5) +
+  geom_histogram(data=filter(df, (lettergroup == "C Only"|lettergroup == "C and B")),fill = "green", alpha = 0.2, binwidth = 5) +
+  # Place dotted lines for mean values
+  geom_vline(xintercept = mean(filter(df, (lettergroup == "A Only"|lettergroup == "A and B"))$age, na.rm = TRUE), linetype="dotted", color = "red", size=1.5) +
+  geom_vline(xintercept = mean(filter(df, (lettergroup == "B Only"|lettergroup == "A and B"))$age, na.rm = TRUE), linetype="dotted", color = "blue", size=1.5) +
+  geom_vline(xintercept = mean(filter(df, (lettergroup == "C Only"|lettergroup == "B and C"))$age, na.rm = TRUE), linetype="dotted", color = "green", size=1.5) +
+  ggtitle("Age Comparison (A=red), (B=blue), (C=green)")
+plot1
+```
+
+```{r, echo = FALSE, include = FALSE}
+mean(filter(df, (lettergroup == "A Only"|lettergroup == "A and B"))$age, na.rm = TRUE)
+mean(filter(df, (lettergroup == "B Only"|lettergroup == "A and B"))$age, na.rm = TRUE)
+mean(filter(df, (lettergroup == "C Only"|lettergroup == "B and C"))$age, na.rm = TRUE)
+median(filter(df, (lettergroup == "A Only"|lettergroup == "A and B"))$age, na.rm = TRUE)
+median(filter(df, (lettergroup == "B Only"|lettergroup == "A and B"))$age, na.rm = TRUE)
+median(filter(df, (lettergroup == "C Only"|lettergroup == "C and B"))$age, na.rm = TRUE)
+```
+
+The mean time since PhD completion of signers of Letter A is 14.6435 years and the median time is 13 years. The mean time since PhD completion of signers of Letter B is 26.35433 years and the median time is 24 years. The mean time since PhD completion of signers of Letter C is 35.48 years and the median time is 37 years.
+
+So signers of Letter C seem to be older than signers of Letter B, who in turn seem older than signers of letter A. Let's validate this using a permutation test. 
+
+```{r}
+muA <- mean(filter(df, (lettergroup == "A Only"|lettergroup == "A and B"))$age, na.rm = TRUE)
+muB <- mean(filter(df, (lettergroup == "B Only"|lettergroup == "A and B"))$age, na.rm = TRUE)
+muC <- mean(filter(df, (lettergroup == "C Only"|lettergroup == "B and C"))$age, na.rm = TRUE)
+
+val1 <- muA - muB
+val2 <- muB - muC
+val3 <- muA - muC
+set.seed(0)
+dist <- meanPermutation(na.omit(df$age,cols="age"),10000)
+
+hist(dist,
+     main = "Age",
+     xlab = "Differences in Mean")
+abline(v=val1, col = "red")
+abline(v=val2, col = "blue")
+abline(v=val3, col = "green")
+
+```
+
+All three differences in mean age lie outside of the induced distribution, so it is unlikely that the observed differences were due to chance, and we can reject all three null hypotheses. 
+
+## Citations
+
+How do the number of citations compare amongst signers of letter A, B, and C? This is a trickier question, because many things influence how many citations a researcher has - age and field for instance - and the number of citations differ between Google Scholar, which includes preprints, and MathSciNet, which only includes published papers. We will subset accordingly, and run permutation tests on each to validate.
+
+### Google Scholar Citations
+
+```{r, echo=FALSE, warning=FALSE}
+plot2 <- ggplot(df, aes(x=citations))+
+  geom_histogram(data=filter(df, (lettergroup == "A Only"|lettergroup == "A and B")),fill = "red", alpha = 0.2, binwidth = 5000) + 
+  geom_histogram(data=filter(df, (lettergroup == "B Only"|lettergroup == "A and B")),fill = "blue", alpha = 0.2, binwidth = 5000) +
+  geom_histogram(data=filter(df, (lettergroup == "C Only"|lettergroup == "C and B")),fill = "green", alpha = 0.2, binwidth = 5000) +
+  geom_vline(xintercept = mean(filter(df, (lettergroup == "A Only"|lettergroup == "A and B"))$citations, na.rm = TRUE), linetype="dotted", color = "red", size=1.5) +
+  geom_vline(xintercept = mean(filter(df, (lettergroup == "B Only"|lettergroup == "A and B"))$citations, na.rm = TRUE), linetype="dotted", color = "blue", size=1.5) +
+  geom_vline(xintercept = mean(filter(df, (lettergroup == "C Only"|lettergroup == "B and C"))$citations, na.rm = TRUE), linetype="dotted", color = "green", size=1.5) +
+  ggtitle("Google Scholar Citations Comparison (A=red), (B=blue), (C=green)")
+plot2
+```
+
+```{r, echo = FALSE, include = FALSE}
+mean(filter(df, (lettergroup == "A Only"|lettergroup == "A and B"))$citations, na.rm = TRUE)
+mean(filter(df, (lettergroup == "B Only"|lettergroup == "A and B"))$citations, na.rm = TRUE)
+mean(filter(df, (lettergroup == "C Only"|lettergroup == "B and C"))$citations, na.rm = TRUE)
+median(filter(df, (lettergroup == "A Only"|lettergroup == "A and B"))$citations, na.rm = TRUE)
+median(filter(df, (lettergroup == "B Only"|lettergroup == "A and B"))$citations, na.rm = TRUE)
+median(filter(df, (lettergroup == "C Only"|lettergroup == "B and C"))$citations, na.rm = TRUE)
+```
+
+The mean number of citations for signers of Letter A is 947.73, and the median is 161. The mean number of citations for signers of Letter B is 3144.062, and the median is 1246. The mean number of citations for signers of Letter C is 6074, and the median is 3307.
+
+So it seems by directly comparing populations, signers of Letter A had less citations than their counterparts on B and C, and that signers of B had less citations than those on C. 
+
+Let's validate this using a permutation test.
+
+```{r}
+muA <- mean(filter(df, (lettergroup == "A Only"|lettergroup == "A and B"))$citations, na.rm = TRUE)
+muB <- mean(filter(df, (lettergroup == "B Only"|lettergroup == "A and B"))$citations, na.rm = TRUE)
+muC <- mean(filter(df, (lettergroup == "C Only"|lettergroup == "B and C"))$citations, na.rm = TRUE)
+
+val1 <- muA - muB
+val2 <- muB - muC
+val3 <- muA - muC
+
+set.seed(0)
+dist <- meanPermutation(na.omit(df$citations),10000)
+
+hist(dist,
+     main = "Permutation Test on GS citations",
+     xlab = "Differences in Mean")
+abline(v=val1, col = "red")
+abline(v=val2, col = "blue")
+abline(v=val3, col = "green")
+
+```
+
+All three differences in mean number of citations lie outside of the induced distribution, so it is unlikely that the observed differences were due to chance. So we can reject all three null hypotheses, and deduce that the signers of letter A had less citations than signers of B and C. 
+
+### Math Sci Net citations 
+
+```{r, echo = FALSE, warning=FALSE}
+plot3 <- ggplot(df, aes(x=amscit))+
+  geom_histogram(data=filter(df, (lettergroup == "A Only"|lettergroup == "A and B")),fill = "red", alpha = 0.2, binwidth = 300) + 
+  geom_histogram(data=filter(df, (lettergroup == "B Only"|lettergroup == "A and B")),fill = "blue", alpha = 0.2, binwidth = 300) +
+  geom_histogram(data=filter(df, (lettergroup == "C Only"|lettergroup == "C and B")),fill = "green", alpha = 0.2, binwidth = 300) +
+  geom_vline(xintercept = mean(filter(df, (lettergroup == "A Only"|lettergroup == "A and B"))$amscit, na.rm = TRUE), linetype="dotted", color = "red", size=1.5) +
+  geom_vline(xintercept = mean(filter(df, (lettergroup == "B Only"|lettergroup == "A and B"))$amscit, na.rm = TRUE), linetype="dotted", color = "blue", size=1.5) +
+  geom_vline(xintercept = mean(filter(df, (lettergroup == "C Only"|lettergroup == "B and C"))$amscit, na.rm = TRUE), linetype="dotted", color = "green", size=1.5) +
+  ggtitle("MathSciNet Citations Comparison (A=red), (B=blue), (C=green)")
+plot3
+```
+
+
+```{r, echo = FALSE}
+mean(filter(df, (lettergroup == "A Only"|lettergroup == "A and B"))$amscit, na.rm = TRUE)
+mean(filter(df, (lettergroup == "B Only"|lettergroup == "A and B"))$amscit, na.rm = TRUE)
+mean(filter(df, (lettergroup == "C Only"|lettergroup == "B and C"))$amscit, na.rm = TRUE)
+median(filter(df, (lettergroup == "A Only"|lettergroup == "A and B"))$amscit, na.rm = TRUE)
+median(filter(df, (lettergroup == "B Only"|lettergroup == "A and B"))$amscit, na.rm = TRUE)
+median(filter(df, (lettergroup == "C Only"|lettergroup == "B and C"))$amscit, na.rm = TRUE)
+```
+
+Using mathscinet, the mean number of citations for signers of Letter A is 424.64, and the median is 299. The mean number of citations for signers of Letter B is 1312.50, and the median is 866. The mean number of citations for signers of Letter C is 2204.74, and the median is 1392.5.
+So it seems by directly comparing populations, signers of Letter A had less citations than their counterparts on B and C. 
+Let's validate this using a permutation test.
+
+```{r}
+muA <- mean(filter(df, (lettergroup == "A Only"|lettergroup == "A and B"))$amscit, na.rm = TRUE)
+muB <- mean(filter(df, (lettergroup == "B Only"|lettergroup == "A and B"))$amscit, na.rm = TRUE)
+muC <- mean(filter(df, (lettergroup == "C Only"|lettergroup == "B and C"))$amscit, na.rm = TRUE)
+
+val1 <- muA - muB
+val2 <- muB - muC
+val3 <- muA - muC
+
+dist <- meanPermutation(na.omit(df$amscit),10000)
+set.seed(0)
+
+hist(dist,
+     main = "Permutation Test on MathSciNet citations",
+     xlab = "Differences in Mean")
+abline(v=val1, col = "red")
+abline(v=val2, col = "blue")
+abline(v=val3, col = "green")
+
+```
+
+```{r}
+sum(dist < val1)/length(dist)
+sum(dist < val2)/length(dist)
+sum(dist < val3)/length(dist)
+```
+The probability that the difference in mean number of citations between signers of A and B is 0.01%. The difference between B and C and A and C are both outside the induced distribution. So it is unlikely that the observed difference in the number of MathSciNet citations was due to chance, and we may reject all three null hypotheses. 
+
+### Google Scholar Citations Only Professors
+
+It is difficult to compare grad students or recently graduates to professors. So we should subset the data, and reperform the analysis comparing only professors. 
+
+```{r, echo=FALSE, warning=FALSE}
+plot4 <- ggplot(df, aes(x=citations))+
+  geom_histogram(data=filter(df, ((lettergroup == "A Only"|lettergroup == "A and B")&(role=="professor"))),fill = "red", alpha = 0.2, binwidth = 5000) + 
+  geom_histogram(data=filter(df, ((lettergroup == "B Only"|lettergroup == "A and B")&(role=="professor"))),fill = "blue", alpha = 0.2, binwidth = 5000) +
+  geom_histogram(data=filter(df,( (lettergroup == "C Only"|lettergroup == "C and B")&(role=="professor"))),fill = "green", alpha = 0.2, binwidth = 5000) +
+  geom_vline(xintercept = mean(filter(df, ((lettergroup == "A Only"|lettergroup == "A and B")&(role=="professor")))$citations, na.rm = TRUE), linetype="dotted", color = "red", size=1.5) +
+  geom_vline(xintercept = mean(filter(df,( (lettergroup == "B Only"|lettergroup == "A and B")&(role=="professor")))$citations, na.rm = TRUE), linetype="dotted", color = "blue", size=1.5) +
+  geom_vline(xintercept = mean(filter(df, ((lettergroup == "C Only"|lettergroup == "B and C")&(role=="professor")))$citations, na.rm = TRUE), linetype="dotted", color = "green", size=1.5) +
+  ggtitle("GS Citations Comparison Professors (A=red), (B=blue), (C=green)")
+plot4
+```
+
+```{r, echo = FALSE, include = FALSE}
+mean(filter(df, ((lettergroup == "A Only"|lettergroup == "A and B")&(role=="professor")))$citations, na.rm = TRUE)
+mean(filter(df, ((lettergroup == "B Only"|lettergroup == "A and B")&(role=="professor")))$citations, na.rm = TRUE)
+mean(filter(df, ((lettergroup == "C Only"|lettergroup == "B and C")&(role=="professor")))$citations, na.rm = TRUE)
+median(filter(df, ((lettergroup == "A Only"|lettergroup == "A and B")&(role=="professor")))$citations, na.rm = TRUE)
+median(filter(df, ((lettergroup == "B Only"|lettergroup == "A and B")&(role=="professor")))$citations, na.rm = TRUE)
+median(filter(df, ((lettergroup == "C Only"|lettergroup == "B and C")&(role=="professor")))$citations, na.rm = TRUE)
+```
+The mean number of citations for professors who were signers of Letter A is 2397.75, and the median is 954. The mean number of citations for professors who were signers of Letter B is 4136.432, and the median is 1923. The mean number of citations for for professors who were signers of Letter C is 6226.816, and the median is 3307.
+
+So it seems by directly comparing populations, professors on Letter A had less citations than their counterparts on B and C. 
+Let's validate this using a permutation test.
+
+```{r}
+muA <- mean(filter(df, ((lettergroup == "A Only"|lettergroup == "A and B")&(role=="professor")))$citations, na.rm = TRUE)
+muB <- mean(filter(df, ((lettergroup == "B Only"|lettergroup == "A and B")&(role=="professor")))$citations, na.rm = TRUE)
+muC <- mean(filter(df, ((lettergroup == "C Only"|lettergroup == "B and C")&(role=="professor")))$citations, na.rm = TRUE)
+
+val1 <- muA - muB
+val2 <- muB - muC
+val3 <- muA - muC
+
+set.seed(0)
+dist <- meanPermutation(na.omit(df$citations),10000)
+
+hist(dist,
+     main = "Permutation Test on GS citations only professors",
+     xlab = "Differences in Mean")
+abline(v=val1, col = "red")
+abline(v=val2, col = "blue")
+abline(v=val3, col = "green")
+
+```
+```{r}
+sum(dist < val1)/length(dist)
+sum(dist < val2)/length(dist)
+sum(dist < val3)/length(dist)
+```
+The probability that the difference in mean number of citations between signers, comparing only professors, of A and B is 0.03%. The difference between B and C and A and C are both outside the induced distribution. So it is unlikely that the observed difference in the number of Google Scholar citations was due to chance, and we may reject all three null hypotheses. 
+
+### MathSciNet Citations Only Professors
+
+```{r, warning=FALSE, echo = FALSE}
+plot4 <- ggplot(df, aes(x=amscit))+
+  geom_histogram(data=filter(df, ((lettergroup == "A Only"|lettergroup == "A and B")&(role=="professor"))),fill = "red", alpha = 0.2, binwidth = 1000) + 
+  geom_histogram(data=filter(df, ((lettergroup == "B Only"|lettergroup == "A and B")&(role=="professor"))),fill = "blue", alpha = 0.2, binwidth = 1000) +
+  geom_histogram(data=filter(df,( (lettergroup == "C Only"|lettergroup == "C and B")&(role=="professor"))),fill = "green", alpha = 0.2, binwidth = 1000) +
+  geom_vline(xintercept = mean(filter(df, ((lettergroup == "A Only"|lettergroup == "A and B")&(role=="professor")))$amscit, na.rm = TRUE), linetype="dotted", color = "red", size=1.5) +
+  geom_vline(xintercept = mean(filter(df,( (lettergroup == "B Only"|lettergroup == "A and B")&(role=="professor")))$amscit, na.rm = TRUE), linetype="dotted", color = "blue", size=1.5) +
+  geom_vline(xintercept = mean(filter(df, ((lettergroup == "C Only"|lettergroup == "B and C")&(role=="professor")))$amscit, na.rm = TRUE), linetype="dotted", color = "green", size=1.5) +
+  ggtitle("GS Citations Comparison Professors (A=red), (B=blue), (C=green)")
+plot4
+```
+
+```{r, echo = FALSE, include=FALSE}
+mean(filter(df, ((lettergroup == "A Only"|lettergroup == "A and B")&(role=="professor")))$amscit, na.rm = TRUE)
+mean(filter(df, ((lettergroup == "B Only"|lettergroup == "A and B")&(role=="professor")))$amscit, na.rm = TRUE)
+mean(filter(df, ((lettergroup == "C Only"|lettergroup == "B and C")&(role=="professor")))$amscit, na.rm = TRUE)
+median(filter(df, ((lettergroup == "A Only"|lettergroup == "A and B")&(role=="professor")))$amscit, na.rm = TRUE)
+median(filter(df, ((lettergroup == "B Only"|lettergroup == "A and B")&(role=="professor")))$amscit, na.rm = TRUE)
+median(filter(df, ((lettergroup == "C Only"|lettergroup == "B and C")&(role=="professor")))$amscit, na.rm = TRUE)
+```
+The mean number of citations on Mathscinet for professors who were signers of Letter A is 437.91, and the median is 300. The mean number of citations for professors who were signers of Letter B is 1182.27, and the median is 728.5. The mean number of citations for for professors who were signers of Letter C is 2176.64, and the median is 1353.
+
+So it seems by directly comparing populations, signers of Letter A had less citations than their counterparts on B and C. 
+Let's validate this using a permutation test.
+
+```{r}
+muA <- mean(filter(df, ((lettergroup == "A Only"|lettergroup == "A and B")&(role=="professor")))$amscit, na.rm = TRUE)
+muB <- mean(filter(df, ((lettergroup == "B Only"|lettergroup == "A and B")&(role=="professor")))$amscit, na.rm = TRUE)
+muC <- mean(filter(df, ((lettergroup == "C Only"|lettergroup == "B and C")&(role=="professor")))$amscit, na.rm = TRUE)
+
+val1 <- muA - muB
+val2 <- muB - muC
+val3 <- muA - muC
+
+set.seed(0)
+dist <- meanPermutation(na.omit(df$amscit),10000)
+
+hist(dist,
+     main = "Permutation Test on MathSciNet citations only professors",
+     xlab = "Differences in Mean")
+abline(v=val1, col = "red")
+abline(v=val2, col = "blue")
+abline(v=val3, col = "green")
+
+```
+
+
+```{r}
+sum(dist < val1)/length(dist)
+sum(dist < val2)/length(dist)
+sum(dist < val3)/length(dist)
+```
+
+All observed differences lie outside the induced distribution, so it is unlikely the observed differences were due to chance. Accordingly, we may reject all three null hypotheses. 
+
+### Google Scholar Citations per Year
+
+Older researchers have had a longer time to rack up citations, so it is important to normalize for this and divide by the length of time professionals have had their PhDs. 
+
+```{r , warning=FALSE, echo = FALSE}
+plot5 <- ggplot(df, aes(x=citperyear))+
+  geom_histogram(data=filter(df, (lettergroup == "A Only"|lettergroup == "A and B")),fill = "red", alpha = 0.2, binwidth = 50) + 
+  geom_histogram(data=filter(df, (lettergroup == "B Only"|lettergroup == "A and B")),fill = "blue", alpha = 0.2, binwidth = 50) +
+  geom_histogram(data=filter(df, (lettergroup == "C Only"|lettergroup == "C and B")),fill = "green", alpha = 0.2, binwidth = 50) +
+  geom_vline(xintercept = mean(filter(df, (lettergroup == "A Only"|lettergroup == "A and B"))$citperyear, na.rm = TRUE), linetype="dotted", color = "red", size=1.5) +
+  geom_vline(xintercept = mean(filter(df, (lettergroup == "B Only"|lettergroup == "A and B"))$citperyear, na.rm = TRUE), linetype="dotted", color = "blue", size=1.5) +
+  geom_vline(xintercept = mean(filter(df, (lettergroup == "C Only"|lettergroup == "B and C"))$citperyear, na.rm = TRUE), linetype="dotted", color = "green", size=1.5) +
+  ggtitle("Citations per Year Comparison (A=red), (B=blue), (C=green)")
+plot5
+```
+```{r, echo = FALSE, include = FALSE}
+mean(filter(df, (lettergroup == "A Only"|lettergroup == "A and B"))$citperyear, na.rm = TRUE)
+mean(filter(df, (lettergroup == "B Only"|lettergroup == "A and B"))$citperyear, na.rm = TRUE)
+mean(filter(df, (lettergroup == "C Only"|lettergroup == "B and C"))$citperyear, na.rm = TRUE)
+median(filter(df, (lettergroup == "A Only"|lettergroup == "A and B"))$citperyear, na.rm = TRUE)
+median(filter(df, (lettergroup == "B Only"|lettergroup == "A and B"))$citperyear, na.rm = TRUE)
+median(filter(df, (lettergroup == "C Only"|lettergroup == "B and C"))$citperyear, na.rm = TRUE)
+```
+
+The mean number of citations per year for signers of Letter A is 69.25, and the median is 22.90. The mean number of citations per year for signers of Letter B is 117.62, and the median is 48.73. The mean number of citations per year for signers of Letter C is 176.99, and the median is 116.67.
+
+So it seems by directly comparing populations, professors on Letter A had less citations per year than their counterparts on B and C. 
+Let's validate this using a permutation test.
+
+```{r}
+muA <- mean(filter(df, (lettergroup == "A Only"|lettergroup == "A and B"))$citperyear, na.rm = TRUE)
+muB <- mean(filter(df, (lettergroup == "B Only"|lettergroup == "A and B"))$citperyear, na.rm = TRUE)
+muC <- mean(filter(df, (lettergroup == "C Only"|lettergroup == "B and C"))$citperyear, na.rm = TRUE)
+
+val1 <- muA - muB
+val2 <- muB - muC
+val3 <- muA - muC
+
+set.seed(0)
+dist <- meanPermutation(na.omit(df$citperyear),10000)
+
+hist(dist,
+     main = "Citations per Year Google Scholar",
+     xlab = "Differences in Mean")
+abline(v=val1, col = "red")
+abline(v=val2, col = "blue")
+abline(v=val3, col = "green")
+```
+
+```{r}
+sum(dist < val1)/length(dist)
+sum(dist < val2)/length(dist)
+sum(dist < val3)/length(dist)
+```
+The percentage of the induced distribution that is more extreme than the observed difference in mean number of citations per year between A and B is 4%. The percentage of the induced distribution that is more extreme than the observed difference in mean number of citations per year between B and C is 1.22%.The observed difference in mean between A and C is outside the induced distribution. So it is unlikely that the observed difference in the number of Google Scholar citations was due to chance, and we may reject all three null hypotheses. 
+
+### Google Scholar Citations per Year only professors
+
+```{r , warning=FALSE, echo = FALSE}
+plot5 <- ggplot(df, aes(x=citperyear))+
+  geom_histogram(data=filter(df, ((lettergroup == "A Only"|lettergroup == "A and B")&(role=="professor"))),fill = "red", alpha = 0.2, binwidth = 50) + 
+  geom_histogram(data=filter(df, ((lettergroup == "B Only"|lettergroup == "A and B")&(role=="professor"))),fill = "blue", alpha = 0.2, binwidth = 50) +
+  geom_histogram(data=filter(df, ((lettergroup == "C Only"|lettergroup == "C and B")&(role=="professor"))),fill = "green", alpha = 0.2, binwidth = 50) +
+  geom_vline(xintercept = mean(filter(df, ((lettergroup == "A Only"|lettergroup == "A and B")&(role=="professor")))$citperyear, na.rm = TRUE), linetype="dotted", color = "red", size=1.5) +
+  geom_vline(xintercept = mean(filter(df, ((lettergroup == "B Only"|lettergroup == "A and B")&(role=="professor")))$citperyear, na.rm = TRUE), linetype="dotted", color = "blue", size=1.5) +
+  geom_vline(xintercept = mean(filter(df, ((lettergroup == "C Only"|lettergroup == "B and C")&(role=="professor")))$citperyear, na.rm = TRUE), linetype="dotted", color = "green", size=1.5) +
+  ggtitle("Professor's Citations per Year Comparison (A=red), (B=blue), (C=green)")
+plot5
+```
+
+```{r, echo = FALSE, include = FALSE}
+mean(filter(df, ((lettergroup == "A Only"|lettergroup == "A and B")&(role=="professor")))$citperyear, na.rm = TRUE)
+mean(filter(df, ((lettergroup == "B Only"|lettergroup == "A and B")&(role=="professor")))$citperyear, na.rm = TRUE)
+mean(filter(df, ((lettergroup == "C Only"|lettergroup == "B and C")&(role=="professor")))$citperyear, na.rm = TRUE)
+median(filter(df, ((lettergroup == "A Only"|lettergroup == "A and B")&(role=="professor")))$citperyear, na.rm = TRUE)
+median(filter(df, ((lettergroup == "B Only"|lettergroup == "A and B")&(role=="professor")))$citperyear, na.rm = TRUE)
+median(filter(df, ((lettergroup == "C Only"|lettergroup == "B and C")&(role=="professor")))$citperyear, na.rm = TRUE)
+```
+
+The mean number of citations per year for professors who were signers of Letter A is 139.26, and the median is 47.56. The mean number of citations per year for professors who were signers of Letter B is 136.14, and the median is 62.81. The mean number of citations per year for for professors who were signers of Letter C is 182.78, and the median is 111.73.
+
+So it seems by directly comparing populations, signers of Letter A had more citations than their counterparts on B, though less than their counterparts C. 
+
+Let's validate this using a permutation test.
+
+```{r}
+muA <- mean(filter(df, ((lettergroup == "A Only"|lettergroup == "A and B")&(role=="professor")))$citperyear, na.rm = TRUE)
+muB <- mean(filter(df, ((lettergroup == "B Only"|lettergroup == "A and B")&(role=="professor")))$citperyear, na.rm = TRUE)
+muC <- mean(filter(df, ((lettergroup == "C Only"|lettergroup == "B and C")&(role=="professor")))$citperyear, na.rm = TRUE)
+
+val1 <- muA - muB
+val2 <- muB - muC
+val3 <- muA - muC
+
+set.seed(0)
+dist <- meanPermutation(na.omit(df$citperyear),10000)
+
+hist(dist,
+     main = "citations",
+     xlab = "Differences in Mean")
+abline(v=val1, col = "red")
+abline(v=val2, col = "blue")
+abline(v=val3, col = "green")
+```
+
+```{r}
+sum(dist < val1)/length(dist)
+sum(dist < val2)/length(dist)
+sum(dist < val3)/length(dist)
+```
+
+About 54.72% of the induced distribution is more extreme (less) than the observed difference between A and B, so it is highly likely the observed difference was due to chance. We fail to reject the null hypothesis that mean of A is equal to B. Only 4.61% of the induced distribution was more extreme than the difference between B and C, and 6.06% between A and C, so it is unlikely those were due to chance. We can thus reject the null hypothesis that $\mu(B)=\mu(C)$ and $\mu(C)=\mu(A)$, but with less certainty than the observed difference for age. 
+
+### MathSciNet Citations per Year only professors
+
+```{r , warning=FALSE, echo = FALSE}
+plot5 <- ggplot(df, aes(x=amscitperyear))+
+  geom_histogram(data=filter(df, ((lettergroup == "A Only"|lettergroup == "A and B")&(role=="professor"))),fill = "red", alpha = 0.2, binwidth = 50) + 
+  geom_histogram(data=filter(df, ((lettergroup == "B Only"|lettergroup == "A and B")&(role=="professor"))),fill = "blue", alpha = 0.2, binwidth = 50) +
+  geom_histogram(data=filter(df, ((lettergroup == "C Only"|lettergroup == "C and B")&(role=="professor"))),fill = "green", alpha = 0.2, binwidth = 50) +
+  geom_vline(xintercept = mean(filter(df, ((lettergroup == "A Only"|lettergroup == "A and B")&(role=="professor")))$amscitperyear, na.rm = TRUE), linetype="dotted", color = "red", size=1.5) +
+  geom_vline(xintercept = mean(filter(df, ((lettergroup == "B Only"|lettergroup == "A and B")&(role=="professor")))$amscitperyear, na.rm = TRUE), linetype="dotted", color = "blue", size=1.5) +
+  geom_vline(xintercept = mean(filter(df, ((lettergroup == "C Only"|lettergroup == "B and C")&(role=="professor")))$amscitperyear, na.rm = TRUE), linetype="dotted", color = "green", size=1.5) +
+  ggtitle("Professor's Citations per Year Comparison (A=red), (B=blue), (C=green)")
+plot5
+```
+
+```{r, echo = FALSE, include = FALSE}
+mean(filter(df, ((lettergroup == "A Only"|lettergroup == "A and B")&(role=="professor")))$amscitperyear, na.rm = TRUE)
+mean(filter(df, ((lettergroup == "B Only"|lettergroup == "A and B")&(role=="professor")))$amscitperyear, na.rm = TRUE)
+mean(filter(df, ((lettergroup == "C Only"|lettergroup == "B and C")&(role=="professor")))$amscitperyear, na.rm = TRUE)
+median(filter(df, ((lettergroup == "A Only"|lettergroup == "A and B")&(role=="professor")))$amscitperyear, na.rm = TRUE)
+median(filter(df, ((lettergroup == "B Only"|lettergroup == "A and B")&(role=="professor")))$amscitperyear, na.rm = TRUE)
+median(filter(df, ((lettergroup == "C Only"|lettergroup == "B and C")&(role=="professor")))$amscitperyear, na.rm = TRUE)
+```
+
+The mean number of citations per year for professors who were signers of Letter A is 16.88, and the median is 13.08. The mean number of citations per year for professors who were signers of Letter B is 38.05, and the median is 24.15. The mean number of citations per year for for professors who were signers of Letter C is 55.36, and the median is 41.74.
+
+So it seems when comparing only professors, signers of Letter A had less citations than their counterparts on B and C. 
+Let's validate this using a permutation test.
+
+
+```{r}
+muA <- mean(filter(df, ((lettergroup == "A Only"|lettergroup == "A and B")&(role=="professor")))$amscitperyear, na.rm = TRUE)
+muB <- mean(filter(df, ((lettergroup == "B Only"|lettergroup == "A and B")&(role=="professor")))$amscitperyear, na.rm = TRUE)
+muC <- mean(filter(df, ((lettergroup == "C Only"|lettergroup == "B and C")&(role=="professor")))$amscitperyear, na.rm = TRUE)
+
+val1 <- muA-muB
+val2 <- muB - muC
+val3 <- muA - muC
+
+set.seed(0)
+dist <- meanPermutation(na.omit(df$amscitperyear),10000)
+
+hist(dist,
+     main = "citations",
+     xlab = "Differences in Mean")
+abline(v=val1, col = "red")
+abline(v=val2, col = "blue")
+abline(v=val3, col = "green")
+```
+
+```{r}
+sum(dist < val1)/length(dist)
+sum(dist < val2)/length(dist)
+sum(dist < val3)/length(dist)
+```
+
+About 0.02% of the induced distribution is more extreme than the observed difference between A and B, so it is highly unlikely the observed difference was due to chance. Only 0.34% of the induced distribution was more extreme than the difference between B and C, and 0% between A and C, so it is unlikely those were due to chance. We may reject all three null hypotheses. 
+
+### Google Scholar Citations Per Year - Women Professors Only
+
+
+```{r , warning=FALSE}
+plot7 <- ggplot(df, aes(x=citperyear))+
+  geom_histogram(data=filter(df, ((lettergroup == "A Only"|lettergroup == "A and B")&(role=="professor")&(gender=="woman"))),fill = "red", alpha = 0.2, binwidth = 50) + 
+  geom_histogram(data=filter(df, ((lettergroup == "B Only"|lettergroup == "A and B")&(role=="professor")&(gender=="woman"))),fill = "blue", alpha = 0.2, binwidth = 50) +
+  geom_histogram(data=filter(df, ((lettergroup == "C Only"|lettergroup == "C and B")&(role=="professor")&(gender=="woman"))),fill = "green", alpha = 0.2, binwidth = 50) +
+  geom_vline(xintercept = mean(filter(df, ((lettergroup == "A Only"|lettergroup == "A and B")&(role=="professor")&(gender=="woman")))$citperyear, na.rm = TRUE), linetype="dotted", color = "red", size=1.5) +
+  geom_vline(xintercept = mean(filter(df, ((lettergroup == "B Only"|lettergroup == "A and B")&(role=="professor")&(gender=="woman")))$citperyear, na.rm = TRUE), linetype="dotted", color = "blue", size=1.5) +
+  geom_vline(xintercept = mean(filter(df, ((lettergroup == "C Only"|lettergroup == "B and C")&(role=="professor")&(gender=="woman")))$citperyear, na.rm = TRUE), linetype="dotted", color = "green", size=1.5) +
+  ggtitle("Female Professor GS Citations per Year Comparison (A=red), (B=blue), (C=green)")
+plot7
+```
+
+```{r, echo = FALSE, include = FALSE}
+mean(filter(df, ((lettergroup == "A Only"|lettergroup == "A and B")&(role=="professor")&(gender=="woman")))$citperyear, na.rm = TRUE)
+mean(filter(df, ((lettergroup == "B Only"|lettergroup == "A and B")&(role=="professor")&(gender=="woman")))$citperyear, na.rm = TRUE)
+mean(filter(df, ((lettergroup == "C Only"|lettergroup == "B and C")&(role=="professor")&(gender=="woman")))$citperyear, na.rm = TRUE)
+median(filter(df, ((lettergroup == "A Only"|lettergroup == "A and B")&(role=="professor")&(gender=="woman")))$citperyear, na.rm = TRUE)
+median(filter(df, ((lettergroup == "B Only"|lettergroup == "A and B")&(role=="professor")&(gender=="woman")))$citperyear, na.rm = TRUE)
+median(filter(df, ((lettergroup == "C Only"|lettergroup == "B and C")&(role=="professor")&(gender=="woman")))$citperyear, na.rm = TRUE)
+```
+
+The mean number of citations per year for female professors who were signers of Letter A is 58.25, and the median is 24.28. The mean number of citations per year for female professors who were signers of Letter B is 82.40, and the median is 31.94. The mean number of citations per year for female professors who were signers of Letter C is 72.29, and the median is 64.56.
+
+So it seems when comparing only female professors, signers of Letter A had less citations per year than their counterparts on B and C, while signers of B had more citations per year than C. 
+
+Let's validate this using a permutation test.
+
+```{r}
+muA <- mean(filter(df, ((lettergroup == "A Only"|lettergroup == "A and B")&(role=="professor")&(gender=="woman")))$citperyear, na.rm = TRUE)
+muB <- mean(filter(df, ((lettergroup == "B Only"|lettergroup == "A and B")&(role=="professor")&(gender=="woman")))$citperyear, na.rm = TRUE)
+muC <- mean(filter(df, ((lettergroup == "C Only"|lettergroup == "B and C")&(role=="professor")&(gender=="woman")))$citperyear, na.rm = TRUE)
+
+val1 <- muA - muB
+val2 <- muB - muC
+val3 <- muA - muC
+
+set.seed(0)
+
+
+dist <- meanPermutation(na.omit(filter(df, ((gender=="woman")&(role=="professor")))$citperyear),10000)
+
+hist(dist,
+     main = "GS citperyear female professors",
+     xlab = "Differences in Mean")
+abline(v=val1, col = "red")
+abline(v=val2, col = "blue")
+abline(v=val3, col = "green")
+```
+
+```{r}
+sum(dist < val1)/length(dist)
+sum(dist < val2)/length(dist)
+sum(dist < val3)/length(dist)
+```
+
+18% of the induced distribution was more extreme than the observed difference in mean between A and B. 63.52% of the induced distribution was more extreme than the observed difference in mean between B and C. 31.56% of the induced distribution was more extreme than the observed difference in ean between A and C. So all of these had a high likelihood of being produced by chance, and we fail to reject all three null hypotheses. 
+
+
+### AMS Citations Per Year - Women Professors Only
+
+
+```{r , warning=FALSE}
+plot8 <- ggplot(df, aes(x=amscitperyear))+
+  geom_histogram(data=filter(df, ((lettergroup == "A Only"|lettergroup == "A and B")&(role=="professor")&(gender=="woman"))),fill = "red", alpha = 0.2, binwidth = 10) + 
+  geom_histogram(data=filter(df, ((lettergroup == "B Only"|lettergroup == "A and B")&(role=="professor")&(gender=="woman"))),fill = "blue", alpha = 0.2, binwidth = 10) +
+  geom_histogram(data=filter(df, ((lettergroup == "C Only"|lettergroup == "C and B")&(role=="professor")&(gender=="woman"))),fill = "green", alpha = 0.2, binwidth = 10) +
+  geom_vline(xintercept = mean(filter(df, ((lettergroup == "A Only"|lettergroup == "A and B")&(role=="professor")&(gender=="woman")))$citperyear, na.rm = TRUE), linetype="dotted", color = "red", size=1.5) +
+  geom_vline(xintercept = mean(filter(df, ((lettergroup == "B Only"|lettergroup == "A and B")&(role=="professor")&(gender=="woman")))$citperyear, na.rm = TRUE), linetype="dotted", color = "blue", size=1.5) +
+  geom_vline(xintercept = mean(filter(df, ((lettergroup == "C Only"|lettergroup == "B and C")&(role=="professor")&(gender=="woman")))$citperyear, na.rm = TRUE), linetype="dotted", color = "green", size=1.5) +
+  ggtitle("Female Professor AMS citperyear Comparison (A=red), (B=blue), (C=green)")
+plot8
+```
+```{r}
+mean(filter(df, ((lettergroup == "A Only"|lettergroup == "A and B")&(role=="professor")&(gender=="woman")))$amscitperyear, na.rm = TRUE)
+mean(filter(df, ((lettergroup == "B Only"|lettergroup == "A and B")&(role=="professor")&(gender=="woman")))$amscitperyear, na.rm = TRUE)
+mean(filter(df, ((lettergroup == "C Only"|lettergroup == "B and C")&(role=="professor")&(gender=="woman")))$amscitperyear, na.rm = TRUE)
+median(filter(df, ((lettergroup == "A Only"|lettergroup == "A and B")&(role=="professor")&(gender=="woman")))$amscitperyear, na.rm = TRUE)
+median(filter(df, ((lettergroup == "B Only"|lettergroup == "A and B")&(role=="professor")&(gender=="woman")))$amscitperyear, na.rm = TRUE)
+median(filter(df, ((lettergroup == "C Only"|lettergroup == "B and C")&(role=="professor")&(gender=="woman")))$amscitperyear, na.rm = TRUE)
+```
+Using the data from mathscinet, the mean number of citations per year for female professors who were signers of Letter A is 15.30, and the median is 5.55. The mean number of citations per year for female professors who were signers of Letter B is 22.54, and the median is 14.80. The mean number of citations per year for female professors who were signers of Letter C is 35.04, and the median is 22.70.
+
+So it seems when comparing only female professors, signers of Letter A had less citations than their counterparts on B and C. 
+
+Let's validate this using a permutation test.
+
+```{r}
+muA <- mean(filter(df, ((lettergroup == "A Only"|lettergroup == "A and B")&(role=="professor")&(gender=="woman")))$amscitperyear, na.rm = TRUE)
+muB <- mean(filter(df, ((lettergroup == "B Only"|lettergroup == "A and B")&(role=="professor")&(gender=="woman")))$amscitperyear, na.rm = TRUE)
+muC <- mean(filter(df, ((lettergroup == "C Only"|lettergroup == "B and C")&(role=="professor")&(gender=="woman")))$amscitperyear, na.rm = TRUE)
+
+val1 <- muA - muB
+val2 <- muB - muC
+val3 <- muA - muC
+
+set.seed(0)
+
+
+dist <- meanPermutation(na.omit(filter(df, ((gender=="woman")&(role=="professor")))$amscitperyear),10000)
+
+hist(dist,
+     main = "amscitperyear women",
+     xlab = "Differences in Mean")
+abline(v=val1, col = "red")
+abline(v=val2, col = "blue")
+abline(v=val3, col = "green")
+```
+```{r}
+sum(dist < val1)/length(dist)
+sum(dist < val2)/length(dist)
+sum(dist < val3)/length(dist)
+```
+20.37% of the induced distribution was more extreme than the observed difference in mean between A and B. 7.38% of the induced distribution was more extreme than the observed difference in mean between B and C. 0.88% of the induced distribution was more extreme than the observed difference in ean between A and C. We fail to reject the difference in mean between female professors of Letter A and B, but we may reject the null hypothesis for the difference in citations per year for female signers of B and C, and C and A. 
+
+
+## hindex
+
+```{r, echo=FALSE, warning=FALSE}
+plot8 <- ggplot(df, aes(x=hindex))+
+  geom_histogram(data=filter(df, (lettergroup == "A Only"|lettergroup == "A and B")),fill = "red", alpha = 0.2, binwidth = 10) + 
+  geom_histogram(data=filter(df, (lettergroup == "B Only"|lettergroup == "A and B")),fill = "blue", alpha = 0.2, binwidth = 10) +
+  geom_histogram(data=filter(df, (lettergroup == "C Only"|lettergroup == "C and B")),fill = "green", alpha = 0.2, binwidth = 10) +
+  geom_vline(xintercept = mean(filter(df, (lettergroup == "A Only"|lettergroup == "A and B"))$hindex, na.rm = TRUE), linetype="dotted", color = "red", size=1.5) +
+  geom_vline(xintercept = mean(filter(df, (lettergroup == "B Only"|lettergroup == "A and B"))$hindex, na.rm = TRUE), linetype="dotted", color = "blue", size=1.5) +
+  geom_vline(xintercept = mean(filter(df, (lettergroup == "C Only"|lettergroup == "B and C"))$hindex, na.rm = TRUE), linetype="dotted", color = "green", size=1.5) +
+  ggtitle("hindex Comparison (A=red), (B=blue), (C=green)")
+plot8
+```
+
+```{r}
+mean(filter(df, (lettergroup == "A Only"|lettergroup == "A and B"))$hindex, na.rm = TRUE)
+mean(filter(df, (lettergroup == "B Only"|lettergroup == "A and B"))$hindex, na.rm = TRUE)
+mean(filter(df, (lettergroup == "C Only"|lettergroup == "B and C"))$hindex, na.rm = TRUE)
+median(filter(df, (lettergroup == "A Only"|lettergroup == "A and B"))$hindex, na.rm = TRUE)
+median(filter(df, (lettergroup == "B Only"|lettergroup == "A and B"))$hindex, na.rm = TRUE)
+median(filter(df, (lettergroup == "C Only"|lettergroup == "B and C"))$hindex, na.rm = TRUE)
+```
+
+
+The mean number of h-index for signers of Letter A is 9.73, and the median is 6. The mean number of h-index for signers of Letter B is 20.78, and the median is 17. The mean h-index for signers of Letter C is 32.24, and the median is 29.5.
+
+It appears that the signers of letter A had a lower h-index than signers of B and C. Let's assess this using a permutation test. 
+
+```{r}
+muA <- mean(filter(df, (lettergroup == "A Only"|lettergroup == "A and B"))$hindex, na.rm = TRUE)
+muB <- mean(filter(df, (lettergroup == "B Only"|lettergroup == "A and B"))$hindex, na.rm = TRUE)
+muC <- mean(filter(df, (lettergroup == "C Only"|lettergroup == "B and C"))$hindex, na.rm = TRUE)
+
+val1 <- muA - muB
+val2 <- muB - muC
+val3 <- muA - muC
+
+dist <- meanPermutation(na.omit(df$hindex,cols="hindex"),10000)
+
+hist(dist,
+     main = "hindex",
+     xlab = "Differences in Mean")
+abline(v=val1, col = "red")
+abline(v=val2, col = "blue")
+abline(v=val3, col = "green")
+
+```
+
+All three differences in mean number of citations lie outside of the induced distribution, so it is unlikely that the observed differences were due to chance. We may hence reject the null hypothesis. 
+
+## Control: Rutgers Math Department
+
+As a control, we look at the Google Scholar citations, the AMS citations, respective citations per year, and h indices of the Rutger's math department. 
+
+```{r, echo = FALSE}
+df2 <- read_csv("~/Desktop/Notices/rutgers.csv")
+df2$age <- (2020- df2$phd)
+df2$citperyear <- df2$GoogleScholar/df2$age
+df2$amscitperyear <- df2$AMSCIT/df2$age
+summary(df2)
+```
+
+```{r, include = FALSE, echo = FALSE}
+mean(na.omit(df2$age))
+mean(na.omit(df2$hindex))
+mean(na.omit(df2$AMSCIT))
+mean(na.omit(df2$GoogleScholar))
+mean(na.omit(df2$citperyear))
+mean(na.omit(df2$amscitperyear))
+```
+The mean age for Rutger's faculty was 35.72 years. The mean h-index was 27.3. The mean Google Scholar citations was 3392.8. The mean AMS citations is 1297.19. The mean Google Scholar citations per year is 101.75. The mean AMS citations is 35.01. 
+
+This is in line with signers of letter B, greater than signers of letter A, and slightly less than that of signers of letter C. 
+
+# Bibliography
+[1] http://www.ams.org/profession/data/annual-survey/2016dp-tableDF1.pdf
+
+
