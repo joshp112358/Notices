@@ -14,16 +14,14 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Introduction
 
-In November 2019, Abigail Thompson, chair of Mathematics at UC Davis and Vice President of the American Mathematical Society, published an essay  [[1](#Bibliography)] in the Notices of the AMS that criticized the usage of Diversity Statements when hiring mathematics faculty. She described Diversity Statements as a "political test" and compared it to McCarthyism.
+In November 2019, Abigail Thompson, chair of Mathematics at UC Davis and Vice President of the American Mathematical Society, published an essay  [[1](#Bibliography)] in the Notices of the AMS that criticized the usage of Mandatory Diversity Statements when hiring mathematics faculty. She described Diversity Statements as a "political test" and compared it to McCarthyism.
 
-In December 2019, a multitude of responses to Thompson's Letter were published in Notices [[2](#Bibliography)], accumulating hundreds of signatures. One letter, titled "The math community values a commitment to diversity," (Letter A) "strongly (disagreed) with the sentiments and arguments
-in Dr. Thompson’s editorial," and hoped "that the AMS
+In December 2019, a multitude of responses to Thompson's Letter were published in Notices [[2](#Bibliography)], accumulating hundreds of signatures. One letter, titled "The math community values a commitment to diversity," "strongly (disagreed) with the sentiments and arguments in Dr. Thompson’s editorial," and hoped "that the AMS
 will reconsider the way that it uses its power and position
-in the mathematics communities in these kinds of discussions." Another letter, titled "Letter to the Editor," (Letter B) spoke of "grave concerns about recent attempts
-to intimidate a voice within our mathematical community." In this letter, they reference an article published by Chad Topaz of William's College, which encouraged faculty to "advise grad-school-bound undergraduate students – especially students who are minoritized along some axis – not to apply to UC Davis." [[3](#Bibliography)] Another letter 
+in the mathematics communities in these kinds of discussions." Another letter, titled "Letter to the Editor," spoke of "grave concerns about recent attempts
+to intimidate a voice within our mathematical community." In this letter, they reference a blog post which encouraged faculty to "advise grad-school-bound undergraduate students – especially students who are minoritized along some axis – not to apply to UC Davis." [[3](#Bibliography)] A final letter, titled "Letter to the Notices of the AMS," criticized the usage of mandatory diversity statements, but affirmed the importance of diversity in mathematics. 
 
-
-
+For the purpose of this exploration, Letter A will refer to the letter titled "The math community values a commitment to diversity," Letter B will refer to the one titled "Letter to the Editor," and Letter C will refer to the one titled "Letter to the Notices of the AMS." We will analyze the number of Google Scholar Citations, MathSciNet citations, citations per year, and h-index of letter signers
 
 ## Data Collection
 ```{r, include=FALSE}
@@ -34,7 +32,7 @@ library(MASS)
 df <- read_csv("~/Desktop/Notices/withAMS.csv")
 ```
 
-Data was collected between December 16-28, 2019 from Google Scholar, the Mathematics Genealogy Project, and MathSciNet. After a list of names and affiliations were scraped from the AMS response letters, signers were searched on Google Scholar and their citation numbers and h-index were collected. This was done using the scholarly API and manual checks. Then the math-genealogy-scraper was used to calculate PhD years and errors (duplicate names) were also corrected manually. MathSciNet entries were also collected manually. 
+Data was collected on December 16-18, 2019 from Google Scholar and the Mathematics Genealogy Project. After a list of names and affiliations were scraped from the AMS response letters, signers were searched on Google Scholar and their citation numbers and h-index were collected. This was done using the scholarly API and manual checks.[[4](#Bibliography)] [[5](#Bibliography)] Then the math-genealogy-scraper was used to calculate PhD years and errors (duplicate names) were also corrected manually. [[6](#Bibliography)] [[7](#Bibliography)].  MathSciNet entries were collected manually. Finally, the data was merged with the QSIDE dataset released on December 28th [[8](#Bibliography)]. 
 
 ## Summary Statistics
 
@@ -57,12 +55,42 @@ summary(df)
 
 # Exploratory Data Analysis
 
+## NaN Visualization
+
+```{r, echo=FALSE}
+library(naniar)
+vis_miss(df)
+```
+
+The citations and h-index column refers to citations and h-indices pulled from Google Scholar. The amscit column refers to citations pulled from Math Sci Net. The year column refers to PhD years scraped from the Mathematics Genealogy Project. The age column was induced by subtracting 2020 from PhD years. The citperyear and amscitper year columns were induced by dividing citations by age. The fellows column refer to individuals who are fellows of the AMS. 
+
+64.11% of the Google Scholar citations is NaN, and 75.47% of the mathscinet citations is NaN. While this is not optimal, a quick sample size calculation shows that one needs 303 samples or 21% of the data to produce statistics at a 95% confidence level and a 5% confidence interval. 
+
 ## Distribution of Citations
 ```{r, echo = FALSE}
 hist(df$citations,
      main = "Histogram of citations",
      xlab = "Number of Citations")
 ```
+
+The data is heavily left skewed. This is usually handled either by transforming the data with a natural logarithm, or by square rooting. Applying a logarithm is more appropiate to assess normality, and a square root is more appropriate to assess exponentiality. We try both.
+
+```{r, echo=FALSE}
+hist(log(df$citations),
+     main = "Histogram of log(citations)",
+     xlab = "Number of Citations")
+```
+
+This data is now right skewed. 
+
+```{r, echo=FALSE}
+qplot(sample = na.omit(log(df$citations)), geom = 'blank') +
+  stat_qq()+
+  stat_qq_line()+
+  ggtitle("Normal QQplot for Citations")
+```
+
+The data is heavy towards the center, and the tails are sparsely populated. Hence the data is unlikely to be normally distributed. 
 
 If we construct a qq-plot with a fitted exponential curve, we find that there is divergence in the tails. 
 
@@ -78,26 +106,9 @@ qplot(sample = Z, geom = 'blank') +
   ggtitle("Exponential QQ-plot with citations")
 ```
 
-This is because the data is heavily left-skewed. This is usually handled either by transforming the data with a natural logarithm, or by square rooting. Applying a logarithm is more appropiate to assess normality, and a square root is more appropriate to assess exponentiality. We try both.
+We now apply a square root. 
 
 ```{r, echo=FALSE}
-hist(log(df$citations),
-     main = "Histogram of log(citations)",
-     xlab = "Number of Citations")
-```
-
-This data is now right skewed. 
-
-```{r}
-qplot(sample = na.omit(log(df$citations)), geom = 'blank') +
-  stat_qq()+
-  stat_qq_line()+
-  ggtitle("Normal QQplot for Citations")
-```
-
-The data is heavy towards the center, and the tails are sparsely populated. Hence the data is unlikely to look normally distributed. 
-
-```{r}
 hist(df$citations^0.5,
      main = "Histogram of sqrt(citations)",
      xlab = "Number of Citations")
@@ -105,32 +116,28 @@ hist(df$citations^0.5,
 
 This looks like an exponential distribution.
 
-```{r}
+```{r, echo=FALSE}
 Z <- na.omit(df$citations^0.5)
 params <- as.list(fitdistr(Z, "exponential")$estimate)
 
 qplot(sample = Z, geom = 'blank') +
   stat_qq(distribution = qexp, dparams = params)+
   stat_qq_line(distribution = qexp, dparams = params)+
-  ggtitle("Exponential QQ-plot with citations")
+  ggtitle("Exponential QQ-plot with citations^0.5")
 ```
 
-```{r}
+An exponential distribution seems to fit the data better, post square rooting. Some fine tuning shows that raising the data to 0.46 produces the closest approximation to an exponential distribution. 
+
+```{r, echo=FALSE}
 Z <- na.omit(df$citations^0.46)
 params <- as.list(fitdistr(Z, "exponential")$estimate)
 
 qplot(sample = Z, geom = 'blank') +
   stat_qq(distribution = qexp, dparams = params)+
   stat_qq_line(distribution = qexp, dparams = params)+
-  ggtitle("Exponential QQ-plot with citations")
+  ggtitle("Exponential QQ-plot with citations^0.46")
 ```
 
-## NaN Visualization
-
-```{r}
-library(naniar)
-vis_miss(df)
-```
 
 ## Permutation Tests
 
@@ -143,6 +150,7 @@ A permutation test is a nonparametric way of assessing the difference in mean be
 3. Take the mean of X and Y and record the difference
 4. Repeat 10,000 times and plot the histogram
 5. Record the number of points (m) in the induced distribution that is more extreme than or equal to the observed $d\mu$. The probability m/10,000 is the probability that what was observed was due to chance. 
+
 
 Here is the function we will use to do this.
 
@@ -169,7 +177,7 @@ The induced probability is similar to p-value, and often produces a similar p-va
 
 ## Gender
 
-What is the proportion of female professors who signed letters A, B, and C. According to a 2016 AMS survey, 707/4902 = 14.4% of tenured professors are women, and including all professionals, 2004/9921 = 20.2% are women. 
+What is the proportion of female professors who signed letters A, B, and C. According to a 2016 AMS survey [[9](#Bibliography)], 707/4902 = 14.4% of tenured professors are women, and including all professionals, 2004/9921 = 20.2% are women. 
 
 We can determine this by using dplyr's filter function. 
 
@@ -312,7 +320,7 @@ plot3
 ```
 
 
-```{r, echo = FALSE}
+```{r, echo = FALSE, include=FALSE}
 mean(filter(df, (lettergroup == "A Only"|lettergroup == "A and B"))$amscit, na.rm = TRUE)
 mean(filter(df, (lettergroup == "B Only"|lettergroup == "A and B"))$amscit, na.rm = TRUE)
 mean(filter(df, (lettergroup == "C Only"|lettergroup == "B and C"))$amscit, na.rm = TRUE)
@@ -346,7 +354,7 @@ abline(v=val3, col = "green")
 
 ```
 
-```{r}
+```{r, echo=FALSE, include=FALSE}
 sum(dist < val1)/length(dist)
 sum(dist < val2)/length(dist)
 sum(dist < val3)/length(dist)
@@ -377,7 +385,7 @@ median(filter(df, ((lettergroup == "A Only"|lettergroup == "A and B")&(role=="pr
 median(filter(df, ((lettergroup == "B Only"|lettergroup == "A and B")&(role=="professor")))$citations, na.rm = TRUE)
 median(filter(df, ((lettergroup == "C Only"|lettergroup == "B and C")&(role=="professor")))$citations, na.rm = TRUE)
 ```
-The mean number of citations for professors who were signers of Letter A is 2397.75, and the median is 954. The mean number of citations for professors who were signers of Letter B is 4136.432, and the median is 1923. The mean number of citations for for professors who were signers of Letter C is 6226.816, and the median is 3307.
+The mean number of citations for professors who were signers of Letter A is 2397.75, and the median is 954. The mean number of citations for professors who were signers of Letter B is 4136.432, and the median is 1923. The mean number of citations for professors who were signers of Letter C is 6226.816, and the median is 3307.
 
 So it seems by directly comparing populations, professors on Letter A had less citations than their counterparts on B and C. 
 Let's validate this using a permutation test.
@@ -402,7 +410,7 @@ abline(v=val2, col = "blue")
 abline(v=val3, col = "green")
 
 ```
-```{r}
+```{r, echo=FALSE, include=FALSE}
 sum(dist < val1)/length(dist)
 sum(dist < val2)/length(dist)
 sum(dist < val3)/length(dist)
@@ -419,7 +427,7 @@ plot4 <- ggplot(df, aes(x=amscit))+
   geom_vline(xintercept = mean(filter(df, ((lettergroup == "A Only"|lettergroup == "A and B")&(role=="professor")))$amscit, na.rm = TRUE), linetype="dotted", color = "red", size=1.5) +
   geom_vline(xintercept = mean(filter(df,( (lettergroup == "B Only"|lettergroup == "A and B")&(role=="professor")))$amscit, na.rm = TRUE), linetype="dotted", color = "blue", size=1.5) +
   geom_vline(xintercept = mean(filter(df, ((lettergroup == "C Only"|lettergroup == "B and C")&(role=="professor")))$amscit, na.rm = TRUE), linetype="dotted", color = "green", size=1.5) +
-  ggtitle("GS Citations Comparison Professors (A=red), (B=blue), (C=green)")
+  ggtitle("Math Sci Net Citations Comparison Professors (A=red), (B=blue), (C=green)")
 plot4
 ```
 
@@ -431,7 +439,7 @@ median(filter(df, ((lettergroup == "A Only"|lettergroup == "A and B")&(role=="pr
 median(filter(df, ((lettergroup == "B Only"|lettergroup == "A and B")&(role=="professor")))$amscit, na.rm = TRUE)
 median(filter(df, ((lettergroup == "C Only"|lettergroup == "B and C")&(role=="professor")))$amscit, na.rm = TRUE)
 ```
-The mean number of citations on Mathscinet for professors who were signers of Letter A is 437.91, and the median is 300. The mean number of citations for professors who were signers of Letter B is 1182.27, and the median is 728.5. The mean number of citations for for professors who were signers of Letter C is 2176.64, and the median is 1353.
+The mean number of citations on Mathscinet for professors who were signers of Letter A is 437.91, and the median is 300. The mean number of citations for professors who were signers of Letter B is 1182.27, and the median is 728.5. The mean number of citations for professors who were signers of Letter C is 2176.64, and the median is 1353.
 
 So it seems by directly comparing populations, signers of Letter A had less citations than their counterparts on B and C. 
 Let's validate this using a permutation test.
@@ -458,7 +466,7 @@ abline(v=val3, col = "green")
 ```
 
 
-```{r}
+```{r, echo=FALSE, include=FALSE}
 sum(dist < val1)/length(dist)
 sum(dist < val2)/length(dist)
 sum(dist < val3)/length(dist)
@@ -481,6 +489,7 @@ plot5 <- ggplot(df, aes(x=citperyear))+
   ggtitle("Citations per Year Comparison (A=red), (B=blue), (C=green)")
 plot5
 ```
+
 ```{r, echo = FALSE, include = FALSE}
 mean(filter(df, (lettergroup == "A Only"|lettergroup == "A and B"))$citperyear, na.rm = TRUE)
 mean(filter(df, (lettergroup == "B Only"|lettergroup == "A and B"))$citperyear, na.rm = TRUE)
@@ -515,12 +524,69 @@ abline(v=val2, col = "blue")
 abline(v=val3, col = "green")
 ```
 
-```{r}
+```{r, echo=FALSE, include=FALSE}
 sum(dist < val1)/length(dist)
 sum(dist < val2)/length(dist)
 sum(dist < val3)/length(dist)
 ```
 The percentage of the induced distribution that is more extreme than the observed difference in mean number of citations per year between A and B is 4%. The percentage of the induced distribution that is more extreme than the observed difference in mean number of citations per year between B and C is 1.22%.The observed difference in mean between A and C is outside the induced distribution. So it is unlikely that the observed difference in the number of Google Scholar citations was due to chance, and we may reject all three null hypotheses. 
+
+### MathSciNet Citations per Year
+We perform the same analysis with MathSciNet.
+```{r , warning=FALSE, echo = FALSE}
+plot9 <- ggplot(df, aes(x=amscitperyear))+
+  geom_histogram(data=filter(df, (lettergroup == "A Only"|lettergroup == "A and B")),fill = "red", alpha = 0.2, binwidth = 50) + 
+  geom_histogram(data=filter(df, (lettergroup == "B Only"|lettergroup == "A and B")),fill = "blue", alpha = 0.2, binwidth = 50) +
+  geom_histogram(data=filter(df, (lettergroup == "C Only"|lettergroup == "C and B")),fill = "green", alpha = 0.2, binwidth = 50) +
+  geom_vline(xintercept = mean(filter(df, (lettergroup == "A Only"|lettergroup == "A and B"))$citperyear, na.rm = TRUE), linetype="dotted", color = "red", size=1.5) +
+  geom_vline(xintercept = mean(filter(df, (lettergroup == "B Only"|lettergroup == "A and B"))$citperyear, na.rm = TRUE), linetype="dotted", color = "blue", size=1.5) +
+  geom_vline(xintercept = mean(filter(df, (lettergroup == "C Only"|lettergroup == "B and C"))$citperyear, na.rm = TRUE), linetype="dotted", color = "green", size=1.5) +
+  ggtitle("Citations per Year Comparison (A=red), (B=blue), (C=green)")
+plot9
+```
+
+```{r, echo = FALSE, include=FALSE}
+mean(filter(df, (lettergroup == "A Only"|lettergroup == "A and B"))$amscitperyear, na.rm = TRUE)
+mean(filter(df, (lettergroup == "B Only"|lettergroup == "A and B"))$amscitperyear, na.rm = TRUE)
+mean(filter(df, (lettergroup == "C Only"|lettergroup == "B and C"))$amscitperyear, na.rm = TRUE)
+median(filter(df, (lettergroup == "A Only"|lettergroup == "A and B"))$amscitperyear, na.rm = TRUE)
+median(filter(df, (lettergroup == "B Only"|lettergroup == "A and B"))$amscitperyear, na.rm = TRUE)
+median(filter(df, (lettergroup == "C Only"|lettergroup == "B and C"))$amscitperyear, na.rm = TRUE)
+```
+
+The mean number of citations per year for signers of Letter A is 16.88, and the median is 13.08. The mean number of citations per year for signers of Letter B is 37.22, and the median is 24.15. The mean number of citations per year for signers of Letter C is 55.55, and the median is 42.42.
+
+So it seems by directly comparing populations, professors on Letter A had less citations per year than their counterparts on B and C. 
+Let's validate this using a permutation test.
+
+```{r}
+muA <- mean(filter(df, (lettergroup == "A Only"|lettergroup == "A and B"))$amscitperyear, na.rm = TRUE)
+muB <- mean(filter(df, (lettergroup == "B Only"|lettergroup == "A and B"))$amscitperyear, na.rm = TRUE)
+muC <- mean(filter(df, (lettergroup == "C Only"|lettergroup == "B and C"))$amscitperyear, na.rm = TRUE)
+
+val1 <- muA - muB
+val2 <- muB - muC
+val3 <- muA - muC
+
+set.seed(0)
+dist <- meanPermutation(na.omit(df$amscitperyear),10000)
+
+hist(dist,
+     main = "Citations per Year Math Sci Net",
+     xlab = "Differences in Mean")
+abline(v=val1, col = "red")
+abline(v=val2, col = "blue")
+abline(v=val3, col = "green")
+```
+
+```{r, echo=FALSE}
+sum(dist < val1)/length(dist)
+sum(dist < val2)/length(dist)
+sum(dist < val3)/length(dist)
+```
+
+The percentage of the induced distribution that is more extreme than the observed difference in mean number of citations per year between A and B is .03%. The percentage of the induced distribution that is more extreme than the observed difference in mean number of citations per year between B and C is .18%.The observed difference in mean between A and C is outside the induced distribution. So it is unlikely that the observed difference in the number of Google Scholar citations was due to chance, and we may reject all three null hypotheses. 
+
 
 ### Google Scholar Citations per Year only professors
 
@@ -545,7 +611,7 @@ median(filter(df, ((lettergroup == "B Only"|lettergroup == "A and B")&(role=="pr
 median(filter(df, ((lettergroup == "C Only"|lettergroup == "B and C")&(role=="professor")))$citperyear, na.rm = TRUE)
 ```
 
-The mean number of citations per year for professors who were signers of Letter A is 139.26, and the median is 47.56. The mean number of citations per year for professors who were signers of Letter B is 136.14, and the median is 62.81. The mean number of citations per year for for professors who were signers of Letter C is 182.78, and the median is 111.73.
+The mean number of citations per year for professors who were signers of Letter A is 139.26, and the median is 47.56. The mean number of citations per year for professors who were signers of Letter B is 136.14, and the median is 62.81. The mean number of citations per year for professors who were signers of Letter C is 182.78, and the median is 111.73.
 
 So it seems by directly comparing populations, signers of Letter A had more citations than their counterparts on B, though less than their counterparts C. 
 
@@ -564,14 +630,14 @@ set.seed(0)
 dist <- meanPermutation(na.omit(df$citperyear),10000)
 
 hist(dist,
-     main = "citations",
+     main = "GS citations per year Professors Only",
      xlab = "Differences in Mean")
 abline(v=val1, col = "red")
 abline(v=val2, col = "blue")
 abline(v=val3, col = "green")
 ```
 
-```{r}
+```{r, echo=FALSE, include=FALSE}
 sum(dist < val1)/length(dist)
 sum(dist < val2)/length(dist)
 sum(dist < val3)/length(dist)
@@ -602,7 +668,7 @@ median(filter(df, ((lettergroup == "B Only"|lettergroup == "A and B")&(role=="pr
 median(filter(df, ((lettergroup == "C Only"|lettergroup == "B and C")&(role=="professor")))$amscitperyear, na.rm = TRUE)
 ```
 
-The mean number of citations per year for professors who were signers of Letter A is 16.88, and the median is 13.08. The mean number of citations per year for professors who were signers of Letter B is 38.05, and the median is 24.15. The mean number of citations per year for for professors who were signers of Letter C is 55.36, and the median is 41.74.
+The mean number of citations per year for professors who were signers of Letter A is 16.88, and the median is 13.08. The mean number of citations per year for professors who were signers of Letter B is 38.05, and the median is 24.15. The mean number of citations per year for professors who were signers of Letter C is 55.36, and the median is 41.74.
 
 So it seems when comparing only professors, signers of Letter A had less citations than their counterparts on B and C. 
 Let's validate this using a permutation test.
@@ -621,14 +687,14 @@ set.seed(0)
 dist <- meanPermutation(na.omit(df$amscitperyear),10000)
 
 hist(dist,
-     main = "citations",
+     main = "AMS citations per year permutation test",
      xlab = "Differences in Mean")
 abline(v=val1, col = "red")
 abline(v=val2, col = "blue")
 abline(v=val3, col = "green")
 ```
 
-```{r}
+```{r, echo=FALSE, include=FALSE}
 sum(dist < val1)/length(dist)
 sum(dist < val2)/length(dist)
 sum(dist < val3)/length(dist)
@@ -639,7 +705,7 @@ About 0.02% of the induced distribution is more extreme than the observed differ
 ### Google Scholar Citations Per Year - Women Professors Only
 
 
-```{r , warning=FALSE}
+```{r, echo=FALSE, warning=FALSE}
 plot7 <- ggplot(df, aes(x=citperyear))+
   geom_histogram(data=filter(df, ((lettergroup == "A Only"|lettergroup == "A and B")&(role=="professor")&(gender=="woman"))),fill = "red", alpha = 0.2, binwidth = 50) + 
   geom_histogram(data=filter(df, ((lettergroup == "B Only"|lettergroup == "A and B")&(role=="professor")&(gender=="woman"))),fill = "blue", alpha = 0.2, binwidth = 50) +
@@ -681,14 +747,14 @@ set.seed(0)
 dist <- meanPermutation(na.omit(filter(df, ((gender=="woman")&(role=="professor")))$citperyear),10000)
 
 hist(dist,
-     main = "GS citperyear female professors",
+     main = "GS citperyear Female Professors",
      xlab = "Differences in Mean")
 abline(v=val1, col = "red")
 abline(v=val2, col = "blue")
 abline(v=val3, col = "green")
 ```
 
-```{r}
+```{r, echo=FALSE, include=FALSE}
 sum(dist < val1)/length(dist)
 sum(dist < val2)/length(dist)
 sum(dist < val3)/length(dist)
@@ -700,7 +766,7 @@ sum(dist < val3)/length(dist)
 ### AMS Citations Per Year - Women Professors Only
 
 
-```{r , warning=FALSE}
+```{r, echo=FALSE, warning=FALSE}
 plot8 <- ggplot(df, aes(x=amscitperyear))+
   geom_histogram(data=filter(df, ((lettergroup == "A Only"|lettergroup == "A and B")&(role=="professor")&(gender=="woman"))),fill = "red", alpha = 0.2, binwidth = 10) + 
   geom_histogram(data=filter(df, ((lettergroup == "B Only"|lettergroup == "A and B")&(role=="professor")&(gender=="woman"))),fill = "blue", alpha = 0.2, binwidth = 10) +
@@ -711,7 +777,8 @@ plot8 <- ggplot(df, aes(x=amscitperyear))+
   ggtitle("Female Professor AMS citperyear Comparison (A=red), (B=blue), (C=green)")
 plot8
 ```
-```{r}
+
+```{r, echo=FALSE, include=FALSE}
 mean(filter(df, ((lettergroup == "A Only"|lettergroup == "A and B")&(role=="professor")&(gender=="woman")))$amscitperyear, na.rm = TRUE)
 mean(filter(df, ((lettergroup == "B Only"|lettergroup == "A and B")&(role=="professor")&(gender=="woman")))$amscitperyear, na.rm = TRUE)
 mean(filter(df, ((lettergroup == "C Only"|lettergroup == "B and C")&(role=="professor")&(gender=="woman")))$amscitperyear, na.rm = TRUE)
@@ -740,13 +807,13 @@ set.seed(0)
 dist <- meanPermutation(na.omit(filter(df, ((gender=="woman")&(role=="professor")))$amscitperyear),10000)
 
 hist(dist,
-     main = "amscitperyear women",
+     main = "MathSciNet citperyear Female Professors",
      xlab = "Differences in Mean")
 abline(v=val1, col = "red")
 abline(v=val2, col = "blue")
 abline(v=val3, col = "green")
 ```
-```{r}
+```{r, echo=FALSE, include=FALSE}
 sum(dist < val1)/length(dist)
 sum(dist < val2)/length(dist)
 sum(dist < val3)/length(dist)
@@ -768,7 +835,7 @@ plot8 <- ggplot(df, aes(x=hindex))+
 plot8
 ```
 
-```{r}
+```{r, echo=FALSE, include=FALSE}
 mean(filter(df, (lettergroup == "A Only"|lettergroup == "A and B"))$hindex, na.rm = TRUE)
 mean(filter(df, (lettergroup == "B Only"|lettergroup == "A and B"))$hindex, na.rm = TRUE)
 mean(filter(df, (lettergroup == "C Only"|lettergroup == "B and C"))$hindex, na.rm = TRUE)
@@ -808,7 +875,7 @@ All three differences in mean number of citations lie outside of the induced dis
 
 As a control, we look at the Google Scholar citations, the AMS citations, respective citations per year, and h indices of the Rutger's math department. 
 
-```{r, echo = FALSE}
+```{r, echo = FALSE, warning=FALSE}
 df2 <- read_csv("~/Desktop/Notices/rutgers.csv")
 df2$age <- (2020- df2$phd)
 df2$citperyear <- df2$GoogleScholar/df2$age
@@ -828,8 +895,10 @@ The mean age for Rutger's faculty was 35.72 years. The mean h-index was 27.3. Th
 
 This is in line with signers of letter B, greater than signers of letter A, and slightly less than that of signers of letter C. 
 
+# Conclusion and Discussion
 
-## Bibliography
+
+# Bibliography
 
 [1] https://www.ams.org/journals/notices/201911/rnoti-p1778.pdf
 
@@ -837,5 +906,15 @@ This is in line with signers of letter B, greater than signers of letter A, and 
 
 [3] https://qsideinstitute.org/2019/11/19/diversity-statements-in-hiring-the-american-mathematical-society-and-uc-davis/
 
-[4] https://qsideinstitute.org/2019/12/09/research-brief-public-letters/
+[4] https://pypi.org/project/scholarly/
+
+[5] https://scholar.google.com/
+
+[6] https://genealogy.math.ndsu.nodak.edu/
+
+[7] https://github.com/j2kun/math-genealogy-scraper
+
+[8] https://qsideinstitute.org/download/ams-letters-study/
+
+[9] http://www.ams.org/profession/data/annual-survey/2016dp-tableDF1.pdf?fbclid=IwAR1mgI0qSEs5nCGquqye741_0lZU-ez7dlcJ3wZYhDtJUswhH1SX7yeiiak
 
