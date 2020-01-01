@@ -202,54 +202,54 @@ released on December 28th {[}\protect\hyperlink{Bibliography}{8}{]}.
 \subsection{Summary Statistics}\label{summary-statistics}}
 
 \begin{verbatim}
-##      name           affiliation          citations         hindex      
-##  Length:1435        Length:1435        Min.   :    1   Min.   :  1.00  
-##  Class :character   Class :character   1st Qu.:  158   1st Qu.:  6.00  
-##  Mode  :character   Mode  :character   Median :  831   Median : 15.00  
-##                                        Mean   : 2796   Mean   : 18.45  
-##                                        3rd Qu.: 2840   3rd Qu.: 26.00  
-##                                        Max.   :71530   Max.   :106.00  
-##                                        NA's   :920     NA's   :922     
-##       year       lettergroup        gender           highered   
-##  Min.   :1957   A and B:  6   man      :969   highered   :1361  
-##  1st Qu.:1984   A Only :615   nonbinary:  1   nothighered:  41  
-##  Median :1999   B and C: 74   woman    :452   NA's       :  33  
-##  Mean   :1996   B Only :600   NA's     : 13                     
-##  3rd Qu.:2009   C Only :134                                     
-##  Max.   :2019   NA's   :  6                                     
-##  NA's   :553                                                    
-##         institution    research             country            role    
-##  domesticother:379   lessri:487   israel        :  46   professor:635  
-##  domesticr1   :673   moreri:878   canada        :  37   associate:202  
-##  domesticr2   :108   NA's  : 70   united kingdom:  21   assistant:192  
-##  international:205                germany       :  14   grad     :119  
-##  NA's         : 70                france        :  13   ntt      : 97  
-##                                   (Other)       :  49   (Other)  : 83  
-##                                   NA's          :1255   NA's     :107  
-##        security      field        simplefield    fellows       
-##  lesssecure:425   comp  :  16   mathed  :  33   Mode :logical  
-##  moresecure:902   math  :1216   mathstat:1228   FALSE:1223     
-##  NA's      :108   mathed:  33   other   :  90   TRUE :206      
-##                   other :  74   NA's    :  84   NA's :6        
-##                   stat  :  12                                  
-##                   NA's  :  84                                  
-##                                                                
-##     Fields              amscit             age          citperyear      
-##  Length:1435        Min.   :    0.0   Min.   : 1.00   Min.   :   0.118  
-##  Class :character   1st Qu.:  413.0   1st Qu.:11.00   1st Qu.:  18.688  
-##  Mode  :character   Median :  955.5   Median :21.00   Median :  48.062  
-##                     Mean   : 1569.6   Mean   :23.87   Mean   : 113.541  
-##                     3rd Qu.: 1725.2   3rd Qu.:36.00   3rd Qu.: 111.271  
-##                     Max.   :15430.0   Max.   :63.00   Max.   :3223.524  
-##                     NA's   :1083      NA's   :553     NA's   :1056      
-##  amscitperyear   
-##  Min.   :  0.00  
-##  1st Qu.: 14.62  
-##  Median : 26.84  
-##  Mean   : 43.35  
-##  3rd Qu.: 49.93  
-##  Max.   :642.92  
-##  NA's   :1151
+##        X1             name           affiliation          citations    
+##  Min.   :   0.0   Length:1435        Length:1435        Min.   :    1  
+##  1st Qu.: 358.5   Class :character   Class :character   1st Qu.:  158  
+##  Median : 717.0   Mode  :character   Mode  :character   Median :  831  
+##  Mean   : 717.0                                         Mean   : 2796  
+##  3rd Qu.:1075.5                                         3rd Qu.: 2840  
+##  Max.   :1434.0                                         Max.   :71530  
+##                                                         NA's   :920    
+##      hindex            year       lettergroup        gender   
+##  Min.   :  1.00   Min.   :1957   A and B:  6   man      :969  
+##  1st Qu.:  6.00   1st Qu.:1984   A Only :615   nonbinary:  1  
+##  Median : 15.00   Median :1999   B and C: 74   woman    :452  
+##  Mean   : 18.45   Mean   :1996   B Only :600   NA's     : 13  
+##  3rd Qu.: 26.00   3rd Qu.:2009   C Only :134                  
+##  Max.   :106.00   Max.   :2019   NA's   :  6                  
+##  NA's   :922      NA's   :553                                 
+##         highered           institution    research             country    
+##  highered   :1361   domesticother:379   lessri:487   israel        :  46  
+##  nothighered:  41   domesticr1   :673   moreri:878   canada        :  37  
+##  NA's       :  33   domesticr2   :108   NA's  : 70   united kingdom:  21  
+##                     international:205                germany       :  14  
+##                     NA's         : 70                france        :  13  
+##                                                      (Other)       :  49  
+##                                                      NA's          :1255  
+##         role           security      field        simplefield  
+##  professor:635   lesssecure:425   comp  :  16   mathed  :  33  
+##  associate:202   moresecure:902   math  :1216   mathstat:1228  
+##  assistant:192   NA's      :108   mathed:  33   other   :  90  
+##  grad     :119                    other :  74   NA's    :  84  
+##  ntt      : 97                    stat  :  12                  
+##  (Other)  : 83                    NA's  :  84                  
+##  NA's     :107                                                 
+##   fellows            amscit           Fields               age       
+##  Mode :logical   Min.   :    0.0   Length:1435        Min.   : 1.00  
+##  FALSE:1223      1st Qu.:  447.5   Class :character   1st Qu.:11.00  
+##  TRUE :206       Median : 1006.0   Mode  :character   Median :21.00  
+##  NA's :6         Mean   : 1650.5                      Mean   :23.87  
+##                  3rd Qu.: 1813.5                      3rd Qu.:36.00  
+##                  Max.   :15430.0                      Max.   :63.00  
+##                  NA's   :1131                         NA's   :553    
+##    citperyear       amscitperyear   
+##  Min.   :   0.118   Min.   :  0.00  
+##  1st Qu.:  18.688   1st Qu.: 15.96  
+##  Median :  48.062   Median : 27.55  
+##  Mean   : 113.541   Mean   : 44.95  
+##  3rd Qu.: 111.271   3rd Qu.: 52.19  
+##  Max.   :3223.524   Max.   :642.92  
+##  NA's   :1056       NA's   :1188
 \end{verbatim}
 
 \hypertarget{exploratory-data-analysis}{%
@@ -344,7 +344,6 @@ with zero citations. Some fine tuning shows that raising the data to
 If we check if the data is Normally distributed, we see again that there
 is sparsity in the tails. Hence it is unlikely that the data is log
 normal.
-
 \includegraphics{final_files/figure-latex/unnamed-chunk-16-1.pdf}
 
 \includegraphics{final_files/figure-latex/unnamed-chunk-17-1.pdf}
@@ -656,11 +655,11 @@ validate this using a permutation test.
 \includegraphics{final_files/figure-latex/unnamed-chunk-35-1.pdf}
 
 \begin{verbatim}
-## [1] 3e-04
+## [1] 4e-04
 \end{verbatim}
 
 \begin{verbatim}
-## [1] 0.0018
+## [1] 0.0084
 \end{verbatim}
 
 \begin{verbatim}
