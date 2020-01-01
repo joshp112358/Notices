@@ -2,11 +2,11 @@
 title: "Citations Analysis of Letter Signers"
 author: "Joshua Paik and Igor Rivin"
 output:
-  html_document:
-    number_sections: true
-    toc: yes
   pdf_document:
     keep_tex: yes
+    toc: yes
+  html_document:
+    number_sections: yes
     toc: yes
   word_document:
     toc: yes
@@ -727,12 +727,37 @@ No signers of Letter A who were Math Professors at R1 universities, were from Ea
 ```{r}
 table(filter(df3, (Letter == "B Only"|Letter == "A and B"))$From)
 ```
-Looking at signers of Letter B who were Math Professors at R1 universities, we find there were 6 native Chinese, 1 native Croatian, 1 native Iranian, 1 native Japanese, 1 native Dutch, 3 native Polacks, 3 native Romanians, 31 native Russians, 2 native Serbians, and 1 native Turk. 
+Looking at signers of Letter B who were Math Professors at R1 universities, we find there were 6 native Chinese, 1 native Croatian, 1 native Iranian, 1 native Japanese, 1 native Dutch, 3 native Poles, 3 native Romanians, 31 native Russians, 2 native Serbians, and 1 native Turk. 
 
 ```{r}
 table(filter(df3, (Letter == "C Only"|Letter == "B and C"))$From)
 ```
 Looking at signers of Letter C who were Math Professors at R1 universities, we find there were 12 native Chinese, 1 native Czech, 1 native Greek, 4 native Hungarians, 1 native Korean, 4 native Romanians, 36 native Russians, and 1 native Turk. 
+
+## AMS Fellows
+
+How many signers were AMS Fellows?
+
+```{r}
+table(filter(df, ((lettergroup == "A Only"|lettergroup == "A and B")
+                  &(role=="professor")
+                  &(field=="math")
+                  &(institution=="domesticr1")))$fellows)
+```
+9 signers of letter A were fellows of the AMS, 6 of whom were math professors at domesticr1 universities. 
+
+```{r}
+table(filter(df, (lettergroup == "B Only"|lettergroup == "A and B")&(role=="professor")
+                  &(field=="math")
+                  &(institution=="domesticr1"))$fellows)
+```
+94 signers of letter B were fellows of the AMS, 58 of whom were math professors at domesticr1 universities. 
+```{r}
+table(filter(df, (lettergroup == "C Only"|lettergroup == "B and C")&(role=="professor")
+                  &(field=="math")
+                  &(institution=="domesticr1"))$fellows)
+```
+103 signers of letter C were fellows of the AMS, 81 of whom were math professors at domesticr1 universities. 
 
 # Conclusion and Discussion
 We see the following patterns amongst the ``established'' mathematicians who signed the three letters: the citations numbers distribution of the signers of Letter A is similar to that of a mid-level mathematics department (such as, say, Temple University), the citations metrics of Letter B are closer to that of a top 20 department such as Rutgers University, while the citations metrics of the signers of Letter C are another tier higher, and are more akin to the distribution of metrics for a truly top department. These differences persist if we restrict our study to female mathematicians only.
