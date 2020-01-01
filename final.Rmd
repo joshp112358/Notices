@@ -3,9 +3,10 @@ title: "Citations Analysis of Letter Signers"
 author: "Joshua Paik and Igor Rivin"
 date: "12/31/2019"
 output:
-  html_document:
-    toc: yes
   pdf_document:
+    keep_tex: yes
+    toc: yes
+  html_document:
     toc: yes
   word_document:
     toc: yes
@@ -151,6 +152,7 @@ hist(df$amscit,
      main = "Histogram of MathSciNet Citations",
      xlab = "Number of Citations")
 ```
+
 The data is again left skewed. Fitting an exponential distribution to this data, we see that there is divergence in the tails.
 
 ```{r, echo=FALSE}
@@ -164,6 +166,7 @@ qplot(sample = Z, geom = 'blank') +
   stat_qq_line(distribution = qexp, dparams = params)+
   ggtitle("Exponential QQ-plot with MathSciNet Citations")
 ```
+
 We now apply a square root. 
 
 ```{r, echo=FALSE}
@@ -171,6 +174,8 @@ hist(df$amscit^0.5,
      main = "Histogram of MathSciNet sqrt(citations)",
      xlab = "Number of Citations")
 ```
+
+The data again looks approximately exponentially distributed, except for the data on the right. This is due to the presence of academics with zero citations. 
 
 ```{r, echo=FALSE}
 Z <- na.omit(df$amscit^0.5)
@@ -181,18 +186,35 @@ qplot(sample = Z, geom = 'blank') +
   stat_qq_line(distribution = qexp, dparams = params)+
   ggtitle("Exponential QQ-plot with MathSciNet citations^0.5")
 ```
-The divergence in the left tail is caused by a number of mathematicians with zero citations. Some fine tuning shows that raising the data to 0.55 produces the closest approximation to an exponential distribution. 
+
+The divergence in the left tail is caused by a number of mathematicians with zero citations. Some fine tuning shows that raising the data to 0.54 produces the closest approximation to an exponential distribution. 
+
 ```{r, echo=FALSE}
-Z <- na.omit(df$amscit^0.55)
+Z <- na.omit(df$amscit^0.54)
 params <- as.list(fitdistr(Z, "exponential")$estimate)
 
 qplot(sample = Z, geom = 'blank') +
   stat_qq(distribution = qexp, dparams = params)+
   stat_qq_line(distribution = qexp, dparams = params)+
-  ggtitle("Exponential QQ-plot with MathSciNet citations^0.55")
+  ggtitle("Exponential QQ-plot with MathSciNet citations^0.54")
 ```
 
-So the MathSciNet data and GS data, when appropriately transformed, appear to be Exponentially or Geometrically distributed. 
+If we check if the data is Normally distributed, we see again that there is sparsity in the tails. Hence it is unlikely that the data is log normal. 
+```{r, echo=FALSE}
+hist(log(df$amscit),
+     main = "Histogram of log(Math Sci Net citations)",
+     xlab = "Number of Citations")
+```
+
+
+```{r, echo=FALSE}
+qplot(sample = na.omit(log(df$citations)), geom = 'blank') +
+  stat_qq()+
+  stat_qq_line()+
+  ggtitle("Normal QQplot for Math Sci Net Citations")
+```
+
+So the MathSciNet data and GS data, when appropriately transformed, appear to be approximately Exponentially distributed. 
 
 ## Permutation Tests
 
