@@ -3,6 +3,7 @@ title: "Citations Analysis of Letter Signers"
 author: "Joshua Paik and Igor Rivin"
 output:
   html_document:
+    number_sections: true
     toc: yes
   pdf_document:
     keep_tex: yes
@@ -15,10 +16,10 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Abstract
+# Abstract
 An opinion piece by Abigail Thompson in the AMS Notices has engendered a lot of discussion, including not one, not two, but three open letters to the Notices. We analyze the professional profiles of the signers of the three letters, and propose a theory for why the results are what they are.
 
-## Introduction
+# Introduction
 
 In November 2019, Abigail Thompson, chair of Mathematics at UC Davis and Vice President of the American Mathematical Society, published an essay  [[1](#Bibliography)] in the Notices of the AMS that criticized the usage of Mandatory Diversity Statements when hiring mathematics faculty. She described Diversity Statements as a "political test" and compared it to McCarthyism.
 
@@ -33,11 +34,11 @@ We will analyze the age (relative to PhD year) and gender of letter signers. We 
 
 It should be noted and emphasized that citations and h-indices do not impose a total order on the quality of a mathematician - indeed, it is quite obvious that, unlike in competitive swimming, imposing such an order is a fool's errand. For example, Stephen Smale has fewer citations than Terence Tao, but it would very difficult to distinguish who is in fact the better mathematician. However, citations generally reflect the mathematics communities opinion of a person, and is the only empirical metric of assessing this.
 
-Most of the rest of this paper gives the methodology of our statistical analyses, and the impatient reader can skip straight to the Conclusions and Discussion -  Section 4.
+Most of the rest of this paper gives the methodology of our statistical analyses, and the impatient reader can skip straight to the Conclusions and Discussion -  Section 6.
 
 
 
-## Data Collection
+# Data Collection
 ```{r, include=FALSE}
 library(readr)
 library(dplyr)
@@ -48,7 +49,7 @@ df <- read_csv("~/Desktop/Notices/withAMS.csv")
 
 Data was collected on December 16-18, 2019 from Google Scholar and the Mathematics Genealogy Project. After a list of names and affiliations were scraped from the AMS response letters, signers were searched on Google Scholar and their citation numbers and h-index were collected. This was done using the scholarly API and manual checks.[[4](#Bibliography)] [[5](#Bibliography)] Then the math-genealogy-scraper was used to calculate PhD years and errors (duplicate names) were also corrected manually. [[6](#Bibliography)] [[7](#Bibliography)].  MathSciNet entries were collected manually. Finally, the data was merged with the QSIDE dataset released on December 28th [[8](#Bibliography)]. 
 
-## Summary Statistics
+# Summary Statistics
 
 ```{r, echo=FALSE}
 df$age <- (2020- df$year)
