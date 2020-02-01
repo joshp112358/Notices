@@ -125,9 +125,9 @@ n_a <- length(na.omit(filter(df, (lettergroup == "A Only"|lettergroup == "A and 
 n_b <- length(na.omit(filter(df, (lettergroup == "B and C"|lettergroup == "B Only"|lettergroup == "A and B")&institution=="domesticr1"&field=="math"&role=="professor")$amscit))
 n_c <- length(na.omit(filter(df, (lettergroup == "C Only"|lettergroup == "B and C")&institution=="domesticr1"&field=="math"&role=="professor")$amscit))
 
-dist1 <- meanPermutation(na.omit(filter(df,(lettergroup == "A Only"|lettergroup == "A and B"|lettergroup == "B and C"|lettergroup == "B Only"))$amscit),10000,n_a)
-dist2 <- meanPermutation(na.omit(filter(df,lettergroup == "B and C"|lettergroup == "B Only"|lettergroup == "A and B"|lettergroup == "C Only")$amscit),10000,n_b)
-dist3 <- meanPermutation(na.omit(filter(df,lettergroup == "A Only"|lettergroup == "A and B"|lettergroup == "C Only"|lettergroup == "B and C")$amscit),10000,n_c)
+dist1 <- meanPermutation(na.omit(filter(df,(lettergroup == "A Only"|lettergroup == "A and B"|lettergroup == "B and C"|lettergroup == "B Only"&institution=="domesticr1"&field=="math"&role=="professor"))$amscit),10000,n_a)
+dist2 <- meanPermutation(na.omit(filter(df,lettergroup == "B and C"|lettergroup == "B Only"|lettergroup == "A and B"|lettergroup == "C Only"&institution=="domesticr1"&field=="math"&role=="professor")$amscit),10000,n_b)
+dist3 <- meanPermutation(na.omit(filter(df,lettergroup == "A Only"|lettergroup == "A and B"|lettergroup == "C Only"|lettergroup == "B and C"&institution=="domesticr1"&field=="math"&role=="professor")$amscit),10000,n_c)
 
 
 sum(dist1 < val1)/length(dist1)
@@ -153,12 +153,12 @@ plot4
 
 ```{r , warning=FALSE, echo = FALSE}
 plot9 <- ggplot(df, aes(x=amscitperyear))+
-  geom_histogram(data=filter(df, (lettergroup == "A Only"|lettergroup == "A and B")),fill = "red", alpha = 0.2, binwidth = 50) + 
-  geom_histogram(data=filter(df, (lettergroup == "B and C"|lettergroup == "B Only"|lettergroup == "A and B")),fill = "blue", alpha = 0.2, binwidth = 50) +
-  geom_histogram(data=filter(df, (lettergroup == "C Only"|lettergroup == "B and C")),fill = "green", alpha = 0.2, binwidth = 50) +
-  geom_vline(xintercept = mean(filter(df, (lettergroup == "A Only"|lettergroup == "A and B"))$amscitperyear, na.rm = TRUE), linetype="solid", color = "red", size=1.5) +
-  geom_vline(xintercept = mean(filter(df, (lettergroup == "B and C"|lettergroup == "B Only"|lettergroup == "A and B"))$amscitperyear, na.rm = TRUE), linetype="solid", color = "blue", size=1.5) +
-  geom_vline(xintercept = mean(filter(df, (lettergroup == "C Only"|lettergroup == "B and C"))$amscitperyear, na.rm = TRUE), linetype="solid", color = "green", size=1.5) +
+  geom_histogram(data=filter(df, (lettergroup == "A Only"|lettergroup == "A and B")&institution=="domesticr1"&field=="math"&(role=="professor")),fill = "red", alpha = 0.2, binwidth = 50) + 
+  geom_histogram(data=filter(df, (lettergroup == "B and C"|lettergroup == "B Only"|lettergroup == "A and B")&institution=="domesticr1"&field=="math"&(role=="professor")),fill = "blue", alpha = 0.2, binwidth = 50) +
+  geom_histogram(data=filter(df, (lettergroup == "C Only"|lettergroup == "B and C")&institution=="domesticr1"&field=="math"&(role=="professor")),fill = "green", alpha = 0.2, binwidth = 50) +
+  geom_vline(xintercept = mean(filter(df, (lettergroup == "A Only"|lettergroup == "A and B")&institution=="domesticr1"&field=="math"&(role=="professor"))$amscitperyear, na.rm = TRUE), linetype="solid", color = "red", size=1.5) +
+  geom_vline(xintercept = mean(filter(df, (lettergroup == "B and C"|lettergroup == "B Only"|lettergroup == "A and B")&institution=="domesticr1"&field=="math"&(role=="professor"))$amscitperyear, na.rm = TRUE), linetype="solid", color = "blue", size=1.5) +
+  geom_vline(xintercept = mean(filter(df, (lettergroup == "C Only"|lettergroup == "B and C")&institution=="domesticr1"&field=="math"&(role=="professor"))$amscitperyear, na.rm = TRUE), linetype="solid", color = "green", size=1.5) +
   ggtitle("Histogram of MathSciNet Citations per Year of R1 Math Professors
    with Population Means Marked Vertically 
    Letter A = Red, Letter B = Blue, Letter C = Green")
@@ -208,21 +208,21 @@ n_a
 
 
 
-## AMS R1 profs 1.3
+## AMS R1 math profs 1.3
 ```{r}
 df$amscitperyearpower <- df$amscit/(df$age^1.3)
-mean(filter(df, (lettergroup == "A Only"|lettergroup == "A and B"))$amscitperyearpower, na.rm = TRUE)
-mean(filter(df, (lettergroup == "B and C"|lettergroup == "B Only"|lettergroup == "A and B"))$amscitperyearpower, na.rm = TRUE)
-mean(filter(df, (lettergroup == "C Only"|lettergroup == "B and C"))$amscitperyearpower, na.rm = TRUE)
-median(filter(df, (lettergroup == "A Only"|lettergroup == "A and B"))$amscitperyearpower, na.rm = TRUE)
-median(filter(df, (lettergroup == "B and C"|lettergroup == "B Only"|lettergroup == "A and B"))$amscitperyearpower, na.rm = TRUE)
-median(filter(df, (lettergroup == "C Only"|lettergroup == "B and C"))$amscitperyearpower, na.rm = TRUE)
+mean(filter(df, (lettergroup == "A Only"|lettergroup == "A and B")&institution=="domesticr1"&field=="math"&role=="professor")$amscitperyearpower, na.rm = TRUE)
+mean(filter(df, (lettergroup == "B and C"|lettergroup == "B Only"|lettergroup == "A and B")&institution=="domesticr1"&field=="math"&role=="professor")$amscitperyearpower, na.rm = TRUE)
+mean(filter(df, (lettergroup == "C Only"|lettergroup == "B and C")&institution=="domesticr1"&field=="math"&role=="professor")$amscitperyearpower, na.rm = TRUE)
+median(filter(df, (lettergroup == "A Only"|lettergroup == "A and B")&institution=="domesticr1"&field=="math"&role=="professor")$amscitperyearpower, na.rm = TRUE)
+median(filter(df, (lettergroup == "B and C"|lettergroup == "B Only"|lettergroup == "A and B")&institution=="domesticr1"&field=="math"&role=="professor")$amscitperyearpower, na.rm = TRUE)
+median(filter(df, (lettergroup == "C Only"|lettergroup == "B and C")&institution=="domesticr1"&field=="math"&role=="professor")$amscitperyearpower, na.rm = TRUE)
 ```
 
 ```{r}
-muA <- mean(filter(df, (lettergroup == "A Only"|lettergroup == "A and B"))$amscitperyearpower, na.rm = TRUE)
-muB <- mean(filter(df, (lettergroup == "B and C"|lettergroup == "B Only"|lettergroup == "A and B"))$amscitperyearpower, na.rm = TRUE)
-muC <- mean(filter(df, (lettergroup == "C Only"|lettergroup == "B and C"))$amscitperyearpower, na.rm = TRUE)
+muA <- mean(filter(df, (lettergroup == "A Only"|lettergroup == "A and B")&institution=="domesticr1"&field=="math"&role=="professor")$amscitperyearpower, na.rm = TRUE)
+muB <- mean(filter(df, (lettergroup == "B and C"|lettergroup == "B Only"|lettergroup == "A and B")&institution=="domesticr1"&field=="math"&role=="professor")$amscitperyearpower, na.rm = TRUE)
+muC <- mean(filter(df, (lettergroup == "C Only"|lettergroup == "B and C")&institution=="domesticr1"&field=="math"&role=="professor")$amscitperyearpower, na.rm = TRUE)
 
 val1 <- muA - muB
 val2 <- muB - muC
@@ -248,12 +248,12 @@ sum(dist3 < val3)/length(dist3)
 
 ```{r , warning=FALSE, echo = FALSE}
 plot9 <- ggplot(df, aes(x=amscitperyearpower))+
-  geom_histogram(data=filter(df, (lettergroup == "A Only"|lettergroup == "A and B")),fill = "red", alpha = 0.2, binwidth = 5) + 
-  geom_histogram(data=filter(df, (lettergroup == "B and C"|lettergroup == "B Only"|lettergroup == "A and B")),fill = "blue", alpha = 0.2, binwidth = 5) +
-  geom_histogram(data=filter(df, (lettergroup == "C Only"|lettergroup == "B and C")),fill = "green", alpha = 0.2, binwidth = 5) +
-  geom_vline(xintercept = mean(filter(df, (lettergroup == "A Only"|lettergroup == "A and B"))$amscitperyearpower, na.rm = TRUE), linetype="solid", color = "red", size=1.5) +
-  geom_vline(xintercept = mean(filter(df, (lettergroup == "B and C"|lettergroup == "B Only"|lettergroup == "A and B"))$amscitperyearpower, na.rm = TRUE), linetype="solid", color = "blue", size=1.5) +
-  geom_vline(xintercept = mean(filter(df, (lettergroup == "C Only"|lettergroup == "B and C"))$amscitperyearpower, na.rm = TRUE), linetype="solid", color = "green", size=1.5) +
+  geom_histogram(data=filter(df, (lettergroup == "A Only"|lettergroup == "A and B")&institution=="domesticr1"&field=="math"&role=="professor"),fill = "red", alpha = 0.2, binwidth = 5) + 
+  geom_histogram(data=filter(df, (lettergroup == "B and C"|lettergroup == "B Only"|lettergroup == "A and B")&institution=="domesticr1"&field=="math"&role=="professor"),fill = "blue", alpha = 0.2, binwidth = 5) +
+  geom_histogram(data=filter(df, (lettergroup == "C Only"|lettergroup == "B and C")&institution=="domesticr1"&field=="math"&role=="professor"),fill = "green", alpha = 0.2, binwidth = 5) +
+  geom_vline(xintercept = mean(filter(df, (lettergroup == "A Only"|lettergroup == "A and B")&institution=="domesticr1"&field=="math"&role=="professor")$amscitperyearpower, na.rm = TRUE), linetype="solid", color = "red", size=1.5) +
+  geom_vline(xintercept = mean(filter(df, (lettergroup == "B and C"|lettergroup == "B Only"|lettergroup == "A and B")&institution=="domesticr1"&field=="math"&role=="professor")$amscitperyearpower, na.rm = TRUE), linetype="solid", color = "blue", size=1.5) +
+  geom_vline(xintercept = mean(filter(df, (lettergroup == "C Only"|lettergroup == "B and C")&institution=="domesticr1"&field=="math"&role=="professor")$amscitperyearpower, na.rm = TRUE), linetype="solid", color = "green", size=1.5) +
   ggtitle("Histogram of MathSciNet Citations per Year^1.3 of R1 Math Professors
    with Population Means Marked Vertically 
    Letter A = Red, Letter B = Blue, Letter C = Green")
@@ -366,15 +366,15 @@ sum(dist2 < val2)/length(dist2)
 sum(dist3 < val3)/length(dist3)
 ```
 
-## GS r1 citperyear
+## GS citperyear
 
 ```{r, echo = FALSE}
-mean(filter(df, (lettergroup == "A Only"|lettergroup == "A and B")&field=="math"&institution=="domesticr1")$citperyear, na.rm = TRUE)
-mean(filter(df, (lettergroup == "B and C"|lettergroup == "B Only"|lettergroup == "A and B")&field=="math"&institution=="domesticr1")$citperyear, na.rm = TRUE)
-mean(filter(df, (lettergroup == "C Only"|lettergroup == "B and C")&field=="math"&institution=="domesticr1")$citperyear, na.rm = TRUE)
-median(filter(df, (lettergroup == "A Only"|lettergroup == "A and B")&field=="math"&institution=="domesticr1")$citperyear, na.rm = TRUE)
-median(filter(df, (lettergroup == "B and C"|lettergroup == "B Only"|lettergroup == "A and B")&field=="math"&institution=="domesticr1")$citperyear, na.rm = TRUE)
-median(filter(df, (lettergroup == "C Only"|lettergroup == "B and C")&field=="math"&institution=="domesticr1")$citperyear, na.rm = TRUE)
+mean(filter(df, (lettergroup == "A Only"|lettergroup == "A and B"))$citperyear, na.rm = TRUE)
+mean(filter(df, (lettergroup == "B and C"|lettergroup == "B Only"|lettergroup == "A and B"))$citperyear, na.rm = TRUE)
+mean(filter(df, (lettergroup == "C Only"|lettergroup == "B and C"))$citperyear, na.rm = TRUE)
+median(filter(df, (lettergroup == "A Only"|lettergroup == "A and B"))$citperyear, na.rm = TRUE)
+median(filter(df, (lettergroup == "B and C"|lettergroup == "B Only"|lettergroup == "A and B"))$citperyear, na.rm = TRUE)
+median(filter(df, (lettergroup == "C Only"|lettergroup == "B and C"))$citperyear, na.rm = TRUE)
 ```
 ```{r}
 muA <- mean(filter(df, (lettergroup == "A Only"|lettergroup == "A and B"))$citperyear, na.rm = TRUE)
@@ -386,11 +386,11 @@ val2 <- muB - muC
 val3 <- muA - muC
 
 set.seed(0)
-pop<- filter(df, (institution=="domesticr1"))
+pop<- df
 
-n_a <- length(na.omit(filter(df, (lettergroup == "A Only"|lettergroup == "A and B")&institution=="domesticr1")$citperyear))
-n_b <- length(na.omit(filter(df, (lettergroup == "B and C"|lettergroup == "B Only"|lettergroup == "A and B")&institution=="domesticr1")$citperyear))
-n_c <- length(na.omit(filter(df, (lettergroup == "C Only"|lettergroup == "B and C")&institution=="domesticr1")$citperyear))
+n_a <- length(na.omit(filter(df, (lettergroup == "A Only"|lettergroup == "A and B"))$citperyear))
+n_b <- length(na.omit(filter(df, (lettergroup == "B and C"|lettergroup == "B Only"|lettergroup == "A and B"))$citperyear))
+n_c <- length(na.omit(filter(df, (lettergroup == "C Only"|lettergroup == "B and C"))$citperyear))
 
 dist1 <- meanPermutation(na.omit(filter(pop,(lettergroup == "A Only"|lettergroup == "A and B"|lettergroup == "B and C"|lettergroup == "B Only"))$citperyear),10000,n_a)
 dist2 <- meanPermutation(na.omit(filter(pop,lettergroup == "B and C"|lettergroup == "B Only"|lettergroup == "A and B"|lettergroup == "C Only")$citperyear),10000,n_b)
@@ -403,9 +403,9 @@ sum(dist3 < val3)/length(dist3)
 ```
 
 ```{r, echo=FALSE}
-sum(dist1 < val1)/length(dist)
-sum(dist2 < val2)/length(dist)
-sum(dist3 < val3)/length(dist)
+sum(dist1 < val1)/length(dist1)
+sum(dist2 < val2)/length(dist2)
+sum(dist3 < val3)/length(dist3)
 ```
 
 ## GS citperyear r1 math professors only
