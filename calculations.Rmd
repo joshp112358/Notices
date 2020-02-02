@@ -143,10 +143,14 @@ plot4 <- ggplot(df, aes(x=amscit))+
   geom_vline(xintercept = mean(filter(df, ((lettergroup == "A Only"|lettergroup == "A and B")&institution=="domesticr1"&field=="math"&(role=="professor")))$amscit, na.rm = TRUE), linetype="solid", color = "red", size=1.5) +
   geom_vline(xintercept = mean(filter(df,( (lettergroup == "B and C"|lettergroup == "B Only"|lettergroup == "A and B")&institution=="domesticr1"&field=="math"&(role=="professor")))$amscit, na.rm = TRUE), linetype="solid", color = "blue", size=1.5) +
   geom_vline(xintercept = mean(filter(df, ((lettergroup == "C Only"|lettergroup == "B and C")&institution=="domesticr1"&field=="math"&(role=="professor")))$amscit, na.rm = TRUE), linetype="solid", color = "green", size=1.5) +
-  ggtitle("Histogram of Math Sci Net Citation of R1 Math Professors
+  ggtitle("Histogram of Math Sci Net Citations of R1 Math Professors
    with Population Means Marked Vertically 
    Letter A = Red, Letter B = Blue, Letter C = Green")
 plot4
+```
+
+```{r}
+hist(dist3)
 ```
 
 ## AMS Citations per year R1 Math Professors Only
